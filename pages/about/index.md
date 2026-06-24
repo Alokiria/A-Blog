@@ -1,15 +1,23 @@
 ---
-title: 关于我
+title: About Me
 ---
 
-I am developing [Valaxy](https://github.com/YunYouJun/valaxy) - Next Generation Static Blog Framework.
+# Hi there 👋
+## I'm Alokiria
+### An aspiring Technical Artist (TA) 🎨
 
-If you like it, you can sponsor me in [GitHub](https://github.com/sponsors/YunYouJun) or [www.yunyoujun.cn/sponsors/](https://www.yunyoujun.cn/sponsors/).
+I focus on real-time rendering, shader programming & web frontend development.
+I spend most spare time learning graphics pipeline, static blog frameworks and cloud deployment.
+
+My direction:
+- Master HLSL/GLSL Shader & PBR rendering theory
+- Build lightweight, fast personal technical blog
+- Organize graphics learning tutorials for beginners
+
+### My Works
+- 📂 All open-source projects can be found in Repositories
+- ✍️ I record TA & front-end study notes at https://alokiria.top/archives
+- 📬 Contact mail: i☆alokiria.top (replace ☆ with @)
 
 ---
 
-我正在开发 [Valaxy](https://github.com/YunYouJun/valaxy) - 下一代静态博客框架。
-
-如果你喜欢它，你可以在 [GitHub](https://github.com/sponsors/YunYouJun) 或 [www.yunyoujun.cn/sponsors/](https://www.yunyoujun.cn/sponsors/) 赞助我。
-
-Check out the [Valaxy | GitHub](https://github.com/YunYouJun/valaxy) for more details.

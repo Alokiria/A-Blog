@@ -53,7 +53,7 @@ const app = useAppStore()
             <!--  -->
             <div class="inline-flex justify-start items-center flex-1">
                 <!-- 汉堡按钮，控制侧边导航栏 -->
-                <div v-if="((route.meta.layout == 'home') )">
+                <div v-if="((route.meta.layout == 'home') || isApp)">
                     <ValaxyHamburger :active="yunApp.fullscreenMenu.isOpen"
                         class="menu-btn sidebar-toggle leading-4 size-12" inline-flex cursor="pointer"
                         hover="bg-white/80 dark:bg-black/80" z="$yun-z-menu-btn"

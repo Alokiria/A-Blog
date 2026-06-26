@@ -16,8 +16,9 @@ const safelist = [
 export default defineValaxyConfig<UserThemeConfig>({
     // site config see site.config.ts
     theme: 'yun',
+
     themeConfig: {
-        
+        type: 'nimbo',
         banner: {
             enable: true,
             title: '向昨天挥手再见',
@@ -50,6 +51,7 @@ export default defineValaxyConfig<UserThemeConfig>({
                 police: '苏公网安备xxxxxx号',
             },
         },
+    
     },
     addons: [
         addonComponents(),

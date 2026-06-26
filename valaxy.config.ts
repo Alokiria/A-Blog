@@ -1,49 +1,79 @@
 import type { UserThemeConfig } from 'valaxy-theme-yun'
 import { defineValaxyConfig } from 'valaxy'
+import { addonComponents } from 'valaxy-addon-components'
+import { addonFace } from 'valaxy-addon-face'
+import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
+import { tryOnBeforeMount } from '@vueuse/core'
 
 // add icons what you will need
 const safelist = [
-  'i-ri-home-line',
+    'i-ri-home-line',
 ]
 
 /**
  * User Config
  */
 export default defineValaxyConfig<UserThemeConfig>({
-  // site config see site.config.ts
-
-  theme: 'yun',
-
-  themeConfig: {
-    banner: {
-      enable: true,
-      title: '向昨天挥手再见',
+    // site config see site.config.ts
+    theme: 'yun',
+    themeConfig: {
+        
+        banner: {
+            enable: true,
+            title: '向昨天挥手再见',
+        },
+        pages: [
+            {
+                name: '番剧',
+                url: '/bangumi/',
+                icon: 'i-ri-tv-line',
+                color: 'pink',
+            },
+            {
+                name: '画廊',
+                url: '/gallery/',
+                icon: 'i-ri-gallery-line',
+                color: 'green',
+            },
+            {
+                name: 'Pixiv',
+                url: '/gallery/pixiv',
+                icon: 'i-ri-sparkling-2-line',
+                color: 'blue',
+            },
+        ],
+        footer: {
+            since: 2026,
+            beian: {
+                enable: false,
+                icp: '苏ICP备17038157号',
+                police: '苏公网安备xxxxxx号',
+            },
+        },
     },
-
-    pages: [
-      {
-        name: '我的小伙伴们',
-        url: '/links/',
-        icon: 'i-ri-genderless-line',
-        color: 'dodgerblue',
-      },
-      {
-        name: '喜欢的女孩子',
-        url: '/girls/',
-        icon: 'i-ri-women-line',
-        color: 'hotpink',
-      },
+    addons: [
+        addonComponents(),
+        addonFace({
+            defaultSize: '3.5em',
+            path: 'https://github.com/Alokiria/Image-Hosting/tree/Alokiria/Blog/meme/'
+        }),
     ],
+    math: true,
+    features: { katex: true },
+    unocss: { safelist },
 
-    footer: {
-      since: 2026,
-      beian: {
-        enable: false,
-        icp: '苏ICP备17038157号',
-        police: '苏公网安备xxxxxx号',
-      },
+
+   markdown: {
+    config(md) {
+      md.use(groupIconMdPlugin)
     },
+    
   },
+  
+  vite: {
+    plugins: [
+      groupIconVitePlugin()
+    ],
+  }
 
-  unocss: { safelist },
 })

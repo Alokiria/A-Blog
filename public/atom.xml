@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://www.alokiria.top/</id>
+    <title>愿慈悲永驻，愿你永远善良……</title>
+    <updated>2026-06-26T08:02:39.121Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <author>
+        <name>江若水</name>
+        <email>i@valaxy.site</email>
+        <uri>https://valaxy.site</uri>
+    </author>
+    <link rel="alternate" href="https://www.alokiria.top/"/>
+    <link rel="self" href="https://www.alokiria.top/atom.xml"/>
+    <subtitle>井底之蛙虽不知大海的辽阔，但会知道天空的湛蓝。</subtitle>
+    <logo>https://raw.githubusercontent.com/Alokiria/Image-Hosting/refs/heads/Alokiria/Blog/avatar.png</logo>
+    <icon>https://www.alokiria.top/favicon.svg</icon>
+    <rights>CC BY-NC-SA 4.0 2026 © 江若水</rights>
+    <entry>
+        <title type="html"><![CDATA[第六章]]></title>
+        <id>https://www.alokiria.top/posts/UnityShader-Chapter6 copy</id>
+        <link href="https://www.alokiria.top/posts/UnityShader-Chapter6 copy"/>
+        <updated>2026-04-05T00:00:00.000Z</updated>
+        <content type="html"><![CDATA[<h1>基础知识</h1>
+<h2>光源</h2>
+<p>在实时渲染中，我们通常把光源当成一个没有体积的点，用<code>l</code>来表示它的方向。</p>
+<p>在光学中，我们使用**辐照度（irradiance）**来量化光，在计算光照模型的时候，我们需</p>
+<br/><p>访问 <a href="https://www.alokiria.top/posts/UnityShader-Chapter6 copy" target="_blank">https://www.alokiria.top/posts/UnityShader-Chapter6 copy</a> 阅读全文。</p>]]></content>
+        <author>
+            <name>江若水</name>
+            <email>i@valaxy.site</email>
+            <uri>https://valaxy.site</uri>
+        </author>
+        <published>2026-04-05T00:00:00.000Z</published>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[第六章 Unity中的基础光照]]></title>
+        <id>https://www.alokiria.top/posts/UnityShader-Chapter6</id>
+        <link href="https://www.alokiria.top/posts/UnityShader-Chapter6"/>
+        <updated>2026-04-05T00:00:00.000Z</updated>
+        <content type="html"><![CDATA[<h1>基础知识</h1>
+<h2>光源</h2>
+<p>在实时渲染中，我们通常把光源当成一个没有体积的点，用<code>l</code>来表示它的方向。</p>
+<p>在光学中，我们使用**辐照度（irradiance）**来量化光，在计算光照模型的时候，我们需</p>
+<br/><p>访问 <a href="https://www.alokiria.top/posts/UnityShader-Chapter6" target="_blank">https://www.alokiria.top/posts/UnityShader-Chapter6</a> 阅读全文。</p>]]></content>
+        <author>
+            <name>江若水</name>
+            <email>i@valaxy.site</email>
+            <uri>https://valaxy.site</uri>
+        </author>
+        <published>2026-04-05T00:00:00.000Z</published>
+    </entry>
+</feed>

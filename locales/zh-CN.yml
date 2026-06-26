@@ -2,3 +2,8 @@
 intro:
   desc: Valaxy 模版
   hi: 你好，Valaxy
+
+
+menu:
+  home: 主页
+  links: 友链

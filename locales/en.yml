@@ -2,3 +2,7 @@
 intro:
   desc: Valaxy Template
   hi: Hello, Valaxy!
+
+menu:
+  home: Home
+  links: Links

@@ -12,11 +12,38 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "d3": "^7.9.0",
+    "markdown-it-mathjax3": "^5.2.0",
     "valaxy": "0.28.11",
-    "valaxy-theme-yun": "0.28.11"
+    "valaxy-addon-face": "^0.2.0",
+    "valaxy-theme-yun": "0.28.11",
+    "vitepress-plugin-group-icons": "^1.7.5"
   },
   "devDependencies": {
+    "@ctrl/tinycolor": "^4.2.0",
+    "@explosions/fireworks": "^0.2.0",
     "@iconify-json/ri": "^1.2.10",
-    "typescript": "^5.9.3"
+    "@types/d3": "^7.4.3",
+    "@unhead/schema-org": "^3.1.5",
+    "@unhead/vue": "^3.1.4",
+    "@valaxyjs/utils": "^0.28.11",
+    "@vueuse/core": "^14.3.0",
+    "@vueuse/integrations": "^14.3.0",
+    "@vueuse/motion": "^3.0.3",
+    "@vueuse/nuxt": "^14.3.0",
+    "@vueuse/router": "^14.3.0",
+    "animejs": "^4.5.0",
+    "dayjs": "^1.11.21",
+    "markdown-it-cjk-friendly": "^2.0.2",
+    "markdown-it-cjk-space-clean": "^0.3.0",
+    "pinia": "^3.0.4",
+    "reka-ui": "^2.10.0",
+    "typescript": "^5.9.3",
+    "unbuild": "^3.6.1",
+    "valaxy-addon-algolia": "^0.2.1",
+    "valaxy-addon-components": "^0.1.0",
+    "vue": "^3.5.38",
+    "vue-i18n": "^11.4.6",
+    "vue-router": "^5.1.0"
   }
 }

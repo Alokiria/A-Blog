@@ -7,7 +7,9 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "paths": {
-      "~/*": ["./*"]
+      "~/*": ["./*"],
+      "@/*": ["../*"],
+      "#theme-yun/*": ["node_modules/valaxy-theme-yun/*"]
     },
     "resolveJsonModule": true,
     "types": [

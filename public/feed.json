@@ -1,0 +1,38 @@
+{
+    "version": "https://jsonfeed.org/version/1",
+    "title": "愿慈悲永驻，愿你永远善良……",
+    "home_page_url": "https://www.alokiria.top/",
+    "feed_url": "https://www.alokiria.top/feed.json",
+    "description": "井底之蛙虽不知大海的辽阔，但会知道天空的湛蓝。",
+    "icon": "https://raw.githubusercontent.com/Alokiria/Image-Hosting/refs/heads/Alokiria/Blog/avatar.png",
+    "author": {
+        "name": "江若水",
+        "url": "https://valaxy.site"
+    },
+    "items": [
+        {
+            "id": "https://www.alokiria.top/posts/UnityShader-Chapter6 copy",
+            "content_html": "<h1>基础知识</h1>\n<h2>光源</h2>\n<p>在实时渲染中，我们通常把光源当成一个没有体积的点，用<code>l</code>来表示它的方向。</p>\n<p>在光学中，我们使用**辐照度（irradiance）**来量化光，在计算光照模型的时候，我们需</p>\n<br/><p>访问 <a href=\"https://www.alokiria.top/posts/UnityShader-Chapter6 copy\" target=\"_blank\">https://www.alokiria.top/posts/UnityShader-Chapter6 copy</a> 阅读全文。</p>",
+            "url": "https://www.alokiria.top/posts/UnityShader-Chapter6 copy",
+            "title": "第六章",
+            "date_modified": "2026-04-05T00:00:00.000Z",
+            "date_published": "2026-04-05T00:00:00.000Z",
+            "author": {
+                "name": "江若水",
+                "url": "https://valaxy.site"
+            }
+        },
+        {
+            "id": "https://www.alokiria.top/posts/UnityShader-Chapter6",
+            "content_html": "<h1>基础知识</h1>\n<h2>光源</h2>\n<p>在实时渲染中，我们通常把光源当成一个没有体积的点，用<code>l</code>来表示它的方向。</p>\n<p>在光学中，我们使用**辐照度（irradiance）**来量化光，在计算光照模型的时候，我们需</p>\n<br/><p>访问 <a href=\"https://www.alokiria.top/posts/UnityShader-Chapter6\" target=\"_blank\">https://www.alokiria.top/posts/UnityShader-Chapter6</a> 阅读全文。</p>",
+            "url": "https://www.alokiria.top/posts/UnityShader-Chapter6",
+            "title": "第六章 Unity中的基础光照",
+            "date_modified": "2026-04-05T00:00:00.000Z",
+            "date_published": "2026-04-05T00:00:00.000Z",
+            "author": {
+                "name": "江若水",
+                "url": "https://valaxy.site"
+            }
+        }
+    ]
+}

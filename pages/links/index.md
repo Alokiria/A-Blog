@@ -1,4 +1,5 @@
 ---
+layout: links
 title: 我的小伙伴们
 keywords: 链接
 description: 若水的小伙伴们

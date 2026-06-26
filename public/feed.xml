@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>愿慈悲永驻，愿你永远善良……</title>
+        <link>https://www.alokiria.top/</link>
+        <description>井底之蛙虽不知大海的辽阔，但会知道天空的湛蓝。</description>
+        <lastBuildDate>Fri, 26 Jun 2026 08:02:39 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <image>
+            <title>愿慈悲永驻，愿你永远善良……</title>
+            <url>https://raw.githubusercontent.com/Alokiria/Image-Hosting/refs/heads/Alokiria/Blog/avatar.png</url>
+            <link>https://www.alokiria.top/</link>
+        </image>
+        <copyright>CC BY-NC-SA 4.0 2026 © 江若水</copyright>
+        <atom:link href="https://www.alokiria.top/feed.xml" rel="self" type="application/rss+xml"/>
+        <item>
+            <title><![CDATA[第六章]]></title>
+            <link>https://www.alokiria.top/posts/UnityShader-Chapter6 copy</link>
+            <guid isPermaLink="false">https://www.alokiria.top/posts/UnityShader-Chapter6 copy</guid>
+            <pubDate>Sun, 05 Apr 2026 00:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>基础知识</h1>
+<h2>光源</h2>
+<p>在实时渲染中，我们通常把光源当成一个没有体积的点，用<code>l</code>来表示它的方向。</p>
+<p>在光学中，我们使用**辐照度（irradiance）**来量化光，在计算光照模型的时候，我们需</p>
+<br/><p>访问 <a href="https://www.alokiria.top/posts/UnityShader-Chapter6 copy" target="_blank">https://www.alokiria.top/posts/UnityShader-Chapter6 copy</a> 阅读全文。</p>]]></content:encoded>
+            <author>i@valaxy.site (江若水)</author>
+        </item>
+        <item>
+            <title><![CDATA[第六章 Unity中的基础光照]]></title>
+            <link>https://www.alokiria.top/posts/UnityShader-Chapter6</link>
+            <guid isPermaLink="false">https://www.alokiria.top/posts/UnityShader-Chapter6</guid>
+            <pubDate>Sun, 05 Apr 2026 00:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>基础知识</h1>
+<h2>光源</h2>
+<p>在实时渲染中，我们通常把光源当成一个没有体积的点，用<code>l</code>来表示它的方向。</p>
+<p>在光学中，我们使用**辐照度（irradiance）**来量化光，在计算光照模型的时候，我们需</p>
+<br/><p>访问 <a href="https://www.alokiria.top/posts/UnityShader-Chapter6" target="_blank">https://www.alokiria.top/posts/UnityShader-Chapter6</a> 阅读全文。</p>]]></content:encoded>
+            <author>i@valaxy.site (江若水)</author>
+        </item>
+    </channel>
+</rss>

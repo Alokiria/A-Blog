@@ -38,6 +38,7 @@ const showNotice = computed(() => {
                             </template>
                         </ClientOnly>
 
+                        <ClientOnly>
                         <!-- Nimbo模式&横幅动画完成后，渲染居中头像和信息YunPrologueSquare -->
                         <Transition v-if="yun.isNimbo && yun.bannerAnimationDone" enter-from-class="scale-60 opacity-0"
                             enter-to-class="scale-100 opacity-100"
@@ -45,13 +46,14 @@ const showNotice = computed(() => {
 
                             <!-- 全屏绝对居中容器 -->
                             <div class="absolute top-0 left-5 right-5 h-screen flex items-center justify-center">
-                                <!-- <Transition enter-from-class="op-0" enter-to-class="op-100"
-                                    enter-active-class="transition-800" appear> -->
+                                <Transition enter-from-class="op-0" enter-to-class="op-100"
+                                    enter-active-class="transition-800" appear>
 
                                     <YunPrologueSquare class="z-1" />
-                                <!-- </Transition> -->
+                                </Transition>
                             </div>
                         </Transition>
+                        </ClientOnly>
                         <!-- 横幅下方一言/自定义文案组件 -->
                         <YunSay v-if="themeConfig.say?.enable" w="full" />
                     </div>

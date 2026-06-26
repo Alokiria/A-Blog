@@ -38,6 +38,7 @@ const showNotice = computed(() => {
                             </template>
                         </ClientOnly>
 
+                        <ClientOnly>
                         <!-- Nimbo模式&横幅动画完成后，渲染居中头像和信息YunPrologueSquare -->
                         <Transition v-if="yun.isNimbo && yun.bannerAnimationDone" enter-from-class="scale-60 opacity-0"
                             enter-to-class="scale-100 opacity-100"
@@ -52,6 +53,7 @@ const showNotice = computed(() => {
                                 </Transition>
                             </div>
                         </Transition>
+                        </ClientOnly>
                         <!-- 横幅下方一言/自定义文案组件 -->
                         <YunSay v-if="themeConfig.say?.enable" w="full" />
                     </div>

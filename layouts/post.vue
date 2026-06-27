@@ -55,8 +55,8 @@ useSchemaOrg(
             </div>
 
             <div class="right-aside w-[400px] shrink-0">
-                <YunLayoutRight />
             </div>
+            <YunLayoutRight />
         </div>
     </YunLayoutWrapper>
 </template>

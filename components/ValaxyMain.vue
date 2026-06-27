@@ -90,7 +90,7 @@ onContentUpdated(() => {
         <slot name="main-nav-before" />
 
         <slot name="main-nav">
-          <YunPostNav v-if="frontmatter.nav !== false" />
+          <YunPostNav v-if="frontmatter.nav !== false && (route.path.startsWith('/about/') || route.path === '/about') && (route.path.startsWith('/links/') || route.path === 'links') " />
         </slot>
 
         <slot name="main-nav-after" />

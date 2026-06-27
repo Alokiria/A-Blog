@@ -8,7 +8,7 @@ export default defineSiteConfig({
   subtitle: '朋友，你知道东方Project吗？',
   author: {
     name: '江若水',
-    avatar: 'https://raw.githubusercontent.com/Alokiria/Image-Hosting/refs/heads/Alokiria/Blog/avatar.png',
+    avatar: 'https://alokiria-blog.oss-cn-beijing.aliyuncs.com/avatar.png',
     intro: 'An aspiring Technical Artist'
   },
   description: '井底之蛙虽不知大海的辽阔，但会知道天空的湛蓝。',
@@ -74,19 +74,19 @@ export default defineSiteConfig({
     methods: [
       {
         name: '支付宝',
-        url: 'https://raw.githubusercontent.com/Alokiria/Image-Hosting/refs/heads/Alokiria/Blog/alipay-qrcode.png',
+        url: 'https://alokiria-blog.oss-cn-beijing.aliyuncs.com/alipay-qrcode.png',
         color: '#00A3EE',
         icon: 'i-ri-alipay-line',
       },
       {
         name: 'QQ 支付',
-        url: 'https://raw.githubusercontent.com/Alokiria/Image-Hosting/refs/heads/Alokiria/Blog/QQpay-qrcode.png',
+        url: 'https://alokiria-blog.oss-cn-beijing.aliyuncs.com/QQpay-qrcode.png',
         color: '#12B7F5',
         icon: 'i-ri-qq-line',
       },
       {
         name: '微信支付',
-        url: 'https://raw.githubusercontent.com/Alokiria/Image-Hosting/refs/heads/Alokiria/Blog/wechatpay-qrcode.png',
+        url: 'https://alokiria-blog.oss-cn-beijing.aliyuncs.com/wechatpay-qrcode.png',
         color: '#2DC100',
         icon: 'i-ri-wechat-pay-line',
       },

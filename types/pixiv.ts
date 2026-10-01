@@ -56,6 +56,14 @@ export interface PixivRankingSource {
   sourceUrl?: string
   /** 请求头。注意：浏览器里不要设置 Referer（禁止修改的头），会直接抛错 */
   headers?: Record<string, string>
+  /**
+   * 声明这个源**优先服务哪些榜单模式**（取值同 RANK_MODES 的 key，如 `['day']`）。
+   * 命中的源会被排到最前面，其余按原顺序作为降级。
+   *
+   * 公开源往往只支持部分榜单。例如 mokeyjay 只提供日榜，
+   * 就写 `prefer: ['day']`，让日榜优先用它；其它模式仍按原顺序尝试。
+   */
+  prefer?: string[]
 }
 
 export interface PixivRankingConfig {

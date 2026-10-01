@@ -3,6 +3,8 @@ import { defineValaxyConfig } from 'valaxy'
 import { addonBangumi } from 'valaxy-addon-bangumi'
 import { addonComponents } from 'valaxy-addon-components'
 import { addonFace } from 'valaxy-addon-face'
+import { addonGirls } from 'valaxy-addon-girls'
+import { addonWaline } from 'valaxy-addon-waline'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 
 /**
@@ -19,6 +21,26 @@ const BILIBILI_UID = '316707795'
 
 /** Bangumi UID（后端 env 中已配置时可留空字符串） */
 const BANGUMI_UID = 'alokiria'
+
+/**
+ * Waline 评论服务端地址。
+ *
+ * ⚠️ 这是个占位符，必须换成**你自己部署**的 Waline 服务端地址，否则评论区
+ * 能正常渲染出来、但会一直提示「评论加载失败」——因为请求打不到任何真实服务端。
+ *
+ * 为什么一定要自建：Valaxy 这边（valaxy-addon-waline）只负责在前端渲染
+ * Waline 组件，评论的存储 / 读取 / 管理全部由这个服务端承担。Waline 官方
+ * 没有提供公共演示服务端，所以没有「不部署也能用」的选项。
+ *
+ * 部署（官方文档 https://waline.js.org/guide/get-started/ ，免费方案约 5 分钟）：
+ *   1. 用 Vercel 一键部署 Waline 服务端（仓库自带 vercel.json，也可直接部署本仓库）；
+ *   2. 在 Vercel 里建一个数据库（Neon / Postgres 等），Waline 会靠环境变量自动识别；
+ *   3. 部署完拿到的地址形如 https://xxx.vercel.app，粘到下面这一行；
+ *   4. 访问 `<你的地址>/ui/register` 注册管理员，第一个注册的人自动成为管理员。
+ *
+ * 想绑自己的域名（例如 waline.alokiria.top）就改这一行即可，代码别处不用动。
+ */
+const WALINE_SERVER_URL = 'https://your-waline-url'
 
 // add icons what you will need
 const safelist = [
@@ -85,7 +107,20 @@ export default defineValaxyConfig<UserThemeConfig>({
         enable: false,
       },
     },
+    /**
+     * 侧边栏「自定义导航链接」入口（由主题的 YunSidebarLinks 渲染，
+     * 手机端全屏菜单里的 YunSidebarLinks 也是同一份数据）。
+     *
+     * 数组顺序就是显示顺序：排在前面的显示在左边。
+     * 所以「角色」放在 番剧 前面 = 入口出现在追番入口的左边。
+     */
     pages: [
+      {
+        name: '角色',
+        url: '/girls/',
+        icon: 'i-ri-women-line',
+        color: '#e0459b',
+      },
       {
         name: '番剧',
         url: '/bangumi/',
@@ -123,11 +158,26 @@ export default defineValaxyConfig<UserThemeConfig>({
      */
     pixiv: {
       ranking: {
-        // 想加自建反代就写在这里（会优先于默认的公共反代）
+        /*
+         * 数据源按顺序降级，默认用 composables/pixiv-ranking.ts 里的两个社区公共反代。
+         *
+         * 实测结论（避免踩坑）：
+         *
+         *   hibiapi   只放行 localhost 和它自己的前端域名 + nanoka.top，
+         *             任何真实部署的站点都会被 400 Not Accepted 拒绝
+         *             （它的 Origin 白名单不含 alokiria.top）。
+         *             所以部署后只能靠 mokeyjay。
+         *   mokeyjay  浏览器可用，但只有日榜、无视 date 参数、无法翻页。
+         *
+         * 想拿到「8 种榜单 + 翻页 + 日期筛选」的完整能力，只能自建反代
+         * （自己的域名自己控制 CORS），再写成下面的 sources 数组放到最前面，
+         * 并用 prefer 声明它优先服务哪些榜单模式。
+         */
         // sources: [
         //   {
         //     label: 'self-hosted',
-        //     rankUrl: 'https://your-worker.example.com/pixiv/rank?mode={mode}&page={page}&date={date}',
+        //     rankUrl: 'https://your-proxy.example.com/api/pixiv/rank?mode={mode}&page={page}&date={date}',
+        //     prefer: ['day', 'week', 'month', 'rookie', 'original', 'male', 'female', 'ai'],
         //   },
         // ],
         imageProxies: ['pximg.cocomi.eu.org', 'i.pixiv.re'],
@@ -153,6 +203,37 @@ export default defineValaxyConfig<UserThemeConfig>({
       customCss: `
         .bbc-bangumi-title a { color: var(--va-c-primary); }
       `,
+    }),
+
+    /**
+     * 角色画廊（valaxy-addon-girls）。
+     *
+     * 插件没有需要配置的选项，注册之后页面里就能直接用自动注册的
+     * <ValaxyGirls> 组件了；角色数据写在 pages/girls/index.md 的
+     * frontmatter `girls` 里（内联数组或远程 JSON 地址都行）。
+     *
+     * 注意：valaxy-theme-yun 本身也依赖这个包（它的 YunGirls.vue 是
+     * 指向 ValaxyGirls 的废弃包装），但那是主题的内部依赖，项目要直接用
+     * 就得像这里一样显式注册 + 在 package.json 里声明依赖。
+     */
+    addonGirls(),
+
+    /**
+     * 评论系统（Waline）。
+     *
+     * 总开关在 site.config.ts 的 `siteConfig.comment.enable`；
+     * 单个页面用 frontmatter 的 `comment: false` 单独关掉。
+     * 当前开启的页面：文章页、画廊页 /albums/、角色页 /girls/、关于页 /about/。
+     *
+     * 这里只传 serverURL，其余全部走 Waline 默认值。可以按需追加：
+     *   - pageview: true   页面浏览量统计（配合 waline 的 /ui 后台看）
+     *   - comment: true    在指定元素里渲染评论数
+     *   - dark: 'html.dark'  暗色模式选择器（插件默认已按 Valaxy 的
+     *                        appStore.isDark 自动切换，通常不用手写）
+     *   - search: false / pageSize: 10 / requiredMeta: ['nick', 'mail'] 等
+     */
+    addonWaline({
+      serverURL: WALINE_SERVER_URL,
     }),
   ],
 

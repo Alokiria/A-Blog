@@ -39,3 +39,23 @@ public/feed.json
 # 本次升级/调试产生的临时目录/文件（.dsh-* 全量忽略）
 .dsh-*/
 .dsh-*.log
+
+# Pixiv 自建反代：已弃置，不纳入版本库
+#
+# 背景：Cloudflare Workers / Pages Functions 的出口 IP 段被 Pixiv 的 WAF 整体
+# 屏蔽（app-api / oauth / www.pixiv.net 全部 403，且 7-22ms 边缘秒拒），
+# 改用 Vercel Serverless Function 后依然要自持 token、维护成本高于收益，
+# 于 2026-10 弃置。相关实现与诊断脚本保留在本地，但不提交。
+#
+# 注意：这两个目录里不含密钥（refresh_token 只放平台 Secret / 环境变量），
+#       下面额外忽略的只是本地调试产物。
+pixiv-proxy/
+pixiv-api/
+valaxy.config.ts.bak
+probe-*.mjs
+verify-debug-api.mjs
+
+# 本地调试产物
+pixiv-proxy/.wrangler/
+pixiv-proxy/.dev.vars
+pixiv-proxy/node_modules/

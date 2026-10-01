@@ -68,6 +68,27 @@ export default defineSiteConfig({
   },
 
   /**
+   * 评论系统总开关（具体实现见 valaxy.config.ts 的 addonWaline）。
+   *
+   * 这里只是「总闸」，某个页面到底显不显示评论区由两层共同决定：
+   *   1. 本开关为 true；
+   *   2. 该页 frontmatter 的 `comment` 不为 false
+   *      （见 components/ValaxyMain.vue 的 `frontmatter.comment !== false`）。
+   *
+   * 当前只有这四类页面开着评论区：
+   *   - 文章页    pages/posts/**           （frontmatter 不写 comment）
+   *   - 画廊页    pages/albums/index.md    （显式 comment: true）
+   *   - 角色页    pages/girls/index.md     （显式 comment: true）
+   *   - 关于页    pages/about/index.md     （显式 comment: true）
+   * 归档 / 分类 / 标签 / 友链 / 追番 / Pixiv / 关于站点等工具页
+   * 都在各自 frontmatter 里显式写了 `comment: false`，想开哪一个把那一行
+   * 删掉（或改成 true）即可，不用动这里的总开关。
+   */
+  comment: {
+    enable: true,
+  },
+
+  /**
    * 首页每页文章数。
    *
    * 首页网格是「首行 2 张大卡 + 其余行每行 3 张小卡」，

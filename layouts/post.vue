@@ -49,14 +49,32 @@ useSchemaOrg(
                             <YunMainContentAfter />
                         </template>
 
+                        <!--
+                            同一分类内的上一篇 / 下一篇。
+
+                            必须塞进 ValaxyMain 的 `main-nav` 插槽，不能像以前那样
+                            写在 RouterView 外面。原因看 components/ValaxyMain.vue
+                            的渲染顺序：
+
+                                main-nav → main-nav-after → comment（评论区）
+
+                            写进插槽里，评论区才会自然落在上下篇**下面**；
+                            写在 RouterView 外面则等于插在整个页面组件之后，
+                            评论区反而会被压在上下篇上面。
+
+                            覆盖 `main-nav` 不会丢东西：主题默认值是 <YunPostNav>，
+                            而本项目的 ValaxyMain 里那句 v-if 要求路径同时以
+                            /about/ 和 /links/ 开头，恒为 false，本来就不渲染。
+                        -->
+                        <template #main-nav>
+                            <PostCategoryNav />
+                        </template>
+
                         <template #aside-custom>
                             <slot name="aside-custom" />
                         </template>
                     </component>
                 </RouterView>
-
-                <!-- 同一分类内的上一篇 / 下一篇 -->
-                <PostCategoryNav />
             </div>
 
             <div class="right-aside w-[400px] shrink-0">

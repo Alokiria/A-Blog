@@ -86,7 +86,20 @@ npm run serve
 - **浏览器里不要给跨域请求设 `Referer`**：它是禁止修改的头，写了直接抛错。测试反代可用性请在 Node 里加。
 - **图片不能直连 `i.pximg.net`**（防盗链，必然 403），要换成允许外链的代理域名。`ProxyImage` 会按候选链依次尝试，并把「哪个域名能通」记进 localStorage，下次优先用。
 
-公开反代随时可能挂掉或限流，**要长期稳定就自建反代**，然后加到 `sources` 最前面（它会被优先使用）：
+### 公共反代的真实限制（重要）
+
+实测结论，避免踩坑：
+
+| 数据源 | 浏览器可用 | 限制 |
+| --- | --- | --- |
+| `hibiapi` | ❌ | **Origin 域名白名单**只放行 `localhost`（任意端口）、它自己的前端域名和 `nanoka.top`。任何真实部署的站点都被 `400 Not Accepted` 拒绝——所以**本地开发正常、部署后必然降级** |
+| `mokeyjay` | ✅ | 只有日榜、**无视 `date` 参数**（永远返回它缓存的那天）、无法翻页 |
+
+> 这也解释了为什么参考站 `nanoka.top` 能用 `hibiapi` 而普通站点不能：它的域名在服务端白名单里。
+
+### 想要完整能力只能自建反代
+
+上面两条限制是服务端行为，前端改不动。想拿到 **8 种榜单 + 翻页 + 日期筛选 + 翻译标签**，只能自己部署一个反代（自己控制 CORS，不再受白名单限制），再写进 `sources` 最前面并声明 `prefer`：
 
 ```ts
 themeConfig: {
@@ -95,9 +108,11 @@ themeConfig: {
       sources: [
         {
           label: 'self-hosted',
-          rankUrl: 'https://your-worker.example.com/pixiv/rank?mode={mode}&page={page}&date={date}',
+          rankUrl: 'https://your-proxy.example.com/api/pixiv/rank?mode={mode}&page={page}&date={date}',
+          // 声明它优先服务这 8 个榜单模式（不给 prefer 就按数组顺序）
+          prefer: ['day', 'week', 'month', 'rookie', 'original', 'male', 'female', 'ai'],
         },
-        // ...默认的公共反代会继续作为降级
+        // ...默认的公共反代会自动作为降级保留
       ],
       imageProxies: ['pximg.cocomi.eu.org', 'i.pixiv.re'],
       maxItems: 120,
@@ -105,6 +120,8 @@ themeConfig: {
   },
 }
 ```
+
+> 本仓库曾经自带过两个反代实现（Cloudflare Worker 与 Vercel Serverless Function），因为出口 IP 被 Pixiv 封禁、维护成本高于收益，**均已弃置并移除**，不再提供部署脚本。
 
 > 说明一个常见的误解：**Pixiv 没有「我的收藏」公开 API**。App API 只开放排行榜和指定用户的作品列表，所以「展示自己收藏的画师作品」只能靠手动维护数据，或爬 HTML（有风险）。这也是本站只做排行榜的原因。
 

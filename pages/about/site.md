@@ -1,5 +1,6 @@
 ---
 title: 关于站点
+comment: false
 ---
 
 Valaxy + valaxy-theme-yun Demo Site

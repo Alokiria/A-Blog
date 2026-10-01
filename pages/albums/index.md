@@ -3,7 +3,7 @@ layout: default
 title: 画廊
 icon: i-ri-gallery-line
 nav: false
-comment: false
+comment: true
 ---
 
 <AlbumBrowser />

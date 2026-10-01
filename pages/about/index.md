@@ -1,5 +1,7 @@
 ---
 title: About Me
+# 评论区开关（总闸在 site.config.ts 的 siteConfig.comment.enable）
+comment: true
 ---
 
 # Hi there 👋

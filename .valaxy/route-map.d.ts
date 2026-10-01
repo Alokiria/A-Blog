@@ -122,6 +122,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/posts/Godot大学习/一些Godot插件推荐': RouteRecordInfo<
+      '/posts/Godot大学习/一些Godot插件推荐',
+      '/posts/Godot%E5%A4%A7%E5%AD%A6%E4%B9%A0/%E4%B8%80%E4%BA%9BGodot%E6%8F%92%E4%BB%B6%E6%8E%A8%E8%8D%90',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/posts/Shader入门精要URP重置/ShaderLab（USL）': RouteRecordInfo<
       '/posts/Shader入门精要URP重置/ShaderLab（USL）',
       '/posts/Shader%E5%85%A5%E9%97%A8%E7%B2%BE%E8%A6%81URP%E9%87%8D%E7%BD%AE/ShaderLab%EF%BC%88USL%EF%BC%89',
@@ -262,6 +269,14 @@ declare module 'vue-router/auto-routes' {
     'node_modules/valaxy-theme-yun/pages/posts/index.vue': {
       routes:
         | '/posts/'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'pages/posts/Godot大学习/一些Godot插件推荐.md': {
+      routes:
+        | '/posts/Godot大学习/一些Godot插件推荐'
       views:
         | never
       pathParamNames:

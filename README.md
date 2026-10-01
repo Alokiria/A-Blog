@@ -24,14 +24,15 @@ npm run serve
 
 ## 包管理器
 
-**本项目使用 npm**（`package-lock.json` 为准）。
+**本项目只使用 npm，仓库里只保留 `package-lock.json`。**
 
 原因：Valaxy 1.0 的 CLI（`node_modules/valaxy/bin/valaxy.mjs`）以及主题 / 插件在**运行期**用 Node 原生 ESM 解析去加载依赖（例如 `yargs`）。pnpm 默认的 isolated 链接模式不会把这些传递依赖暴露到根 `node_modules`，会直接报 `ERR_MODULE_NOT_FOUND`。
 
-如果你确实想用 pnpm：
+> **不要往仓库里加回 pnpm 的锁文件 / 配置。** Cloudflare Pages 等平台是**按锁文件自动识别包管理器**的：只要仓库里存在 `pnpm-lock.yaml`，构建时就会改成跑 `pnpm install --frozen-lockfile`，而这个锁文件一旦没跟上 `package.json` 的改动，构建会在安装依赖阶段直接失败（`ERR_PNPM_OUTDATED_LOCKFILE`）。
+>
+> 同理，`pnpm-workspace.yaml` 也会被识别为 pnpm 项目，故一并移除。
 
-- pnpm **10 及更早**：`.npmrc` 里的 `node-linker=hoisted` 会被读取，可以正常工作。
-- pnpm **11+**：不再从 `.npmrc` 读取 hoist 设置。**不要**改用 `publicHoistPattern: ['*']`——那会把所有传递依赖强行提升到根目录，导致同名包多版本冲突（例如 `confbox` 0.2.x 遮蔽 `pkg-types` 需要的 0.3.x，`./json` 子路径直接解析失败）。这种情况建议直接用 npm。
+如果你本地确实想用 pnpm 跑一遍看看（不推荐），那就自己临时装，别把锁文件提交上来。注意 pnpm **11+** 不再从 `.npmrc` 读取 hoist 设置，而**不要**改用 `publicHoistPattern: ['*']` —— 那会把所有传递依赖强行提升到根目录，导致同名包多版本冲突（例如 `confbox` 0.2.x 遮蔽 `pkg-types` 需要的 0.3.x，`./json` 子路径直接解析失败）。
 
 另外 `.npmrc` 里设置了 `legacy-peer-deps=true`：`valaxy-addon-bangumi` 等插件的 peer 声明是 `valaxy: ">=0.22"`，而 semver 默认不认为 `1.0.0-rc.16` 满足 `>=0.22`，npm 会直接 `ERESOLVE` 失败。
 

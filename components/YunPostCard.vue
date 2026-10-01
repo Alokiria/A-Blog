@@ -54,9 +54,16 @@ const showCollectionCount = computed(() => props.collection != null && collectio
 
       <!-- 视觉背景层：封面图 + 遮罩（压暗 / 渐白成白卡） -->
       <div class="post-card-visual" aria-hidden="true">
+        <!--
+          referrerpolicy 不能省：封面通常来自语雀 cdn.nlark.com 这类配了
+          Referer 白名单的图床，浏览器默认会带上本站 Referer → 403 图裂。
+          文章页的封面由 PostCover.vue 处理，这里是首页卡片，走的是另一条路径。
+        -->
         <img
           v-if="cover" :src="cover" alt=""
-          class="post-card-cover-img" loading="lazy" decoding="async"
+          class="post-card-cover-img"
+          referrerpolicy="no-referrer"
+          loading="lazy" decoding="async"
         >
         <div class="post-card-shade" />
       </div>

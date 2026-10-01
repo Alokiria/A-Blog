@@ -1,0 +1,64 @@
+/**
+ * MathJax 行内公式排版修复。
+ *
+ * 问题：文章里用 `$...$` 写的行内公式，在 dev 下会各自独占一行，把文字挤成
+ * 「其中，／n̂／是表面法线，／l̂／……」这样一列。
+ *
+ * 根因：Valaxy 主题的 UnoCSS preflight 有一条全局重置
+ *     img, svg, video, canvas, audio, iframe, embed, object { display: block }
+ *   把公式的 `<svg>` 变成了块级元素，于是它必然独占一行。
+ *
+ * MathJax 官方样式表里本来有一条 `mjx-container[jax="SVG"] > svg { display: inline }`
+ * 来抵消这类重置，但它在 dev 下存在两个问题：
+ *   1. 该规则**缺失**（Valaxy 只注入了每实例 scoped 样式，官方基础规则没进来）；
+ *   2. 即便存在，它没有 ID 前缀（特异性 0,1,1），也打不过 reset 的 (0,1,0) 之外
+ *      还有 `svg` 标签自身的层叠顺序。
+ * 而 SSG 构建时 Valaxy 会给每条 MathJax 规则自动加上 `#mjx-<id>` 前缀
+ * （特异性 1,0,1），所以构建产物反而正常 —— 这就是 dev 与 build 表现不一致的原因。
+ *
+ * 修复：用足够高的特异性把 svg 改回行内，仅作用于 MathJax 生成的 svg，
+ * 不影响文章中其它 img/svg。用 !important 是为了压过 preflight。
+ */
+mjx-container[jax='SVG'] > svg {
+  display: inline !important;
+  vertical-align: middle;
+}
+
+// 块级公式（$$...$$）本来就该独占一行居中，保持 MathJax 的默认行为
+mjx-container[jax='SVG'][display='true'] {
+  display: block;
+}
+
+/* ------------------------------------------------------------------
+ * 一级标题（markdown 里的 `#`）用天蓝色
+ *
+ * 正文 h1 原本没有自己的颜色，继承 body 的 #333，和 h2 在视觉上完全分不开
+ * （字号也只差 3.2px：h1 32px / h2 28.8px，见 styles/index.scss 的说明）。
+ * 这里只给 h1 上色，用它把"章"级标题和"节"级（h2）区分开。
+ *
+ * 注意：h1 位于 .markdown-body 内，而文章大标题虽然也是 h1、但在 .markdown-body
+ * 之外，所以不会被这条规则影响。
+ * ------------------------------------------------------------------ */
+.markdown-body h1 {
+  color: #00bfff !important; /* 天蓝色 deepskyblue（写十六进制更稳，避免名字解析差异） */
+}
+
+/* ------------------------------------------------------------------
+ * 图片说明文字（figcaption）：图片下方的灰色小字
+ *
+ * 文字内容来自 markdown 图片的 alt，即 `![环境光设置](url)` 里的「环境光设置」。
+ * 启用方式见 valaxy.config.ts 的 markdown.imageFigures.figcaption = 'alt'。
+ *
+ * 主题自带的 styles/markdown.scss 里其实写过类似规则，但那个文件从未被
+ * import（Valaxy 只自动加载 styles/index.scss），所以一直没有生效，这里补上。
+ * ------------------------------------------------------------------ */
+.markdown-body figure figcaption {
+  margin-top: 0.4rem;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  /* --va-c-text-2 是主题的次级文字色（灰），跟随明暗主题自动变化 */
+  color: var(--va-c-text-2, #888);
+}
+
+

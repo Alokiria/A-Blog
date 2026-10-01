@@ -26,7 +26,7 @@
 .left-virtual-sidebar {
     flex-shrink: 0;
     width: 400px;
-
+    margin-right: 1rem;  
     /* background: #f6f6f6; 取消注释可直观看到占位区域 */
     @media (max-width: 1024px) {
         display: none;

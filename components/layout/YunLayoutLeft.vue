@@ -5,8 +5,7 @@ import { computed } from 'vue'
 const fm = useFrontmatter()
 
 /**
- * When frontmatter.sidebar is explicitly set to false, the sidebar is not rendered.
- * Otherwise, CSS media query controls visibility (hidden on mobile, shown on lg+).
+ * frontmatter.sidebar 显式设为 false 时不渲染；否则由下面的 CSS 断点控制显隐。
  */
 const sidebarExplicit = computed(() => {
   if (typeof fm.value.sidebar !== 'undefined')
@@ -16,21 +15,24 @@ const sidebarExplicit = computed(() => {
 </script>
 
 <template>
-  <div
-    v-if="sidebarExplicit !== false"
-    class="yun-layout-left gap-4 sticky top-$yun-margin-top w-80"
-  >
+  <div v-if="sidebarExplicit !== false" class="yun-layout-left">
     <slot>
-      <!-- <YunSidebarCard /> -->
+      <YunSidebarCard />
       <YunAdBoard />
     </slot>
   </div>
 </template>
 
 <style>
-/* Hide left sidebar on screens smaller than lg (1024px) to prevent
-   side-by-side layout with yun-main on narrow/mobile screens.
-   Mobile users use the hamburger menu instead. */
+/*
+ * 左侧栏定位与主题右侧栏（components/YunAside.vue 的 .yun-aside）保持一套参数：
+ *   position: fixed; top: 0; max-height: 100vh
+ * 这样它铺满视口上限、并且不随页面滚动移动（内容超出时自己内部滚动）。
+ *
+ * 之前这里是 `sticky top-$yun-margin-top w-80`：
+ *   - sticky 会跟着页面滚，和右边的 fixed 表现不一致
+ *   - w-80 只有 320px，比右栏的 400px 窄，两栏对不齐
+ */
 .yun-layout-left {
   display: none;
 }
@@ -39,6 +41,14 @@ const sidebarExplicit = computed(() => {
   .yun-layout-left {
     display: flex;
     flex-direction: column;
+    gap: 1rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    width: 400px;
+    max-height: 100vh;
+    overflow-y: auto;
   }
 }
 </style>

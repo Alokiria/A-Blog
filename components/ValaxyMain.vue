@@ -4,6 +4,7 @@ import { onClickHref, onContentUpdated, scrollTo, usePostTitle, useSiteConfig } 
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePostProperty } from '../node_modules/valaxy-theme-yun/composables'
+import PostCover from './PostCover.vue'
 
 const props = defineProps<{
   frontmatter: Post
@@ -48,7 +49,19 @@ onContentUpdated(() => {
         flex="~ col grow"
         p="lt-md:0"
       >
-        <YunCard :cover="frontmatter.cover" m="0" v-bind="styles ? { style: styles } : {}">
+        <!-- 卡片外壳：原来是主题的 <YunCard>，这里展开成等价的普通 div
+             （yun-card 类名保持一致，样式不受影响），唯一目的是把封面图换成
+             自己的 PostCover —— 它会带上 referrerpolicy="no-referrer"，
+             否则语雀 cdn.nlark.com 这类配了 Referer 白名单的图床会返回 403。 -->
+        <div
+          class="yun-card flex-center rounded-2 overflow-hidden"
+          flex="col"
+          min-h="100px"
+          bg="$va-c-bg-light"
+          m="0"
+          v-bind="styles ? { style: styles } : {}"
+        >
+          <PostCover :cover="frontmatter.cover" />
           <YunPostActions />
           <div class="mt-8 mb-4">
             <slot name="main-header">
@@ -85,7 +98,7 @@ onContentUpdated(() => {
 
             <slot name="main-content-after" />
           </div>
-        </YunCard>
+        </div>
 
         <slot name="main-nav-before" />
 

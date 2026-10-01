@@ -1,3 +1,8 @@
+# pnpm 11 起，allowBuilds 需要写在 workspace 配置里（旧的 .npmrc 写法已失效）。
+# 注意：本项目主用 npm（见 README「包管理器」一节）。
+# hoist 相关设置请在 .npmrc 用 node-linker=hoisted，不要用 publicHoistPattern: ['*']，
+# 那会把所有传递依赖强行提升到根目录，导致同名包的多版本冲突
+# （例如 confbox 0.2.x 会遮蔽 pkg-types 需要的 0.3.x，`./json` 子路径直接解析失败）。
 allowBuilds:
   '@parcel/watcher': false
   esbuild: false

@@ -3,6 +3,7 @@ import { defineArticle, useSchemaOrg } from '@unhead/schema-org/vue'
 
 import dayjs from 'dayjs'
 import { useFrontmatter, useSiteConfig, useValaxyI18n } from 'valaxy'
+import PostCategoryNav from '../components/PostCategoryNav.vue'
 
 const siteConfig = useSiteConfig()
 const frontmatter = useFrontmatter()
@@ -34,7 +35,8 @@ useSchemaOrg(
 <template>
     <YunLayoutWrapper>
         <div class="three-col flex w-full h-full flex-nowrap">
-            <div class="left-virtual-sidebar w-[400px] shrink-0"></div>
+            <!-- 左栏：仅 400px 空白占位，不放任何侧边栏内容。 -->
+            <div class="left-column w-[400px] shrink-0" />
 
             <div class="main-content flex-grow  overflow-auto">
                 <RouterView v-slot="{ Component }">
@@ -52,6 +54,9 @@ useSchemaOrg(
                         </template>
                     </component>
                 </RouterView>
+
+                <!-- 同一分类内的上一篇 / 下一篇 -->
+                <PostCategoryNav />
             </div>
 
             <div class="right-aside w-[400px] shrink-0">
@@ -67,13 +72,16 @@ useSchemaOrg(
   flex-wrap: nowrap;
   width: 100%;
   height: 100%;
+  min-width: 0;
+  flex-grow: 1;
+  align-items: flex-start;
 }
 
-// 左侧400px虚拟占位，1080px断点隐藏
-.left-virtual-sidebar {
+// 左侧 400px 栏：纯空白占位，不放任何内容。
+// 1024px 以下隐藏，保持和原先一致的断点。
+.left-column {
   flex-shrink: 0;
   width: 400px;
-  /* background: #f6f6f6; 取消注释可直观看到占位区域 */
   @media (max-width: 1024px) {
     display: none;
   }
@@ -81,6 +89,7 @@ useSchemaOrg(
 
 .main-content {
   flex: 1;
+  min-width: 0;
   overflow: auto;
 }
 
@@ -93,20 +102,7 @@ useSchemaOrg(
   }
 }
 
-// 屏蔽主题自带原生左侧侧边栏，避免双重左侧栏冲突
-:deep(.yun-layout-wrapper__sidebar) {
-  display: none !important;
-}
-
-// 清除YunLayoutWrapper自带容器边距、最大宽度居中限制
-:deep(.yun-layout-wrapper__container) {
-  width: 100% !important;
-  max-width: unset !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-// 取消中间文章内容最大宽度限制，实现紧贴左右侧边无留白
+// 取消中间文章内容最大宽度限制，让文章铺满中栏
 :deep(.yun-main > div.content) {
   max-width: unset !important;
   margin-inline: 0 !important;

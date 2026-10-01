@@ -1,8 +1,9 @@
 ---
-title: ShaderLab
+title: ShaderLab入门
 date: 2026-04-04
 updated: 2026-06-11
 categories: UnityShader入门精要-URP改编
+cover: https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251203145913_%E8%BE%89%E5%A4%9C2.jpg
 tags:
   - UnityShader
   - Shaderlab

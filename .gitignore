@@ -23,3 +23,19 @@ components.d.ts
 .env
 .env.*
 node_modules/
+
+# valaxy fuse
+public/valaxy-fuse-list.json
+
+# valaxy rss
+public/feed.xml
+
+# valaxy rss
+public/atom.xml
+
+# valaxy rss
+public/feed.json
+
+# 本次升级/调试产生的临时目录/文件（.dsh-* 全量忽略）
+.dsh-*/
+.dsh-*.log

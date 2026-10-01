@@ -1,0 +1,68 @@
+/**
+ * 全局样式入口。
+ *
+ * Valaxy 只会自动引入 `styles/index.ts` / `index.css` / `index.scss` 三者中
+ * 存在的一个（见 valaxy 的 resolveUserStyles），因此自定义样式必须从这里汇总。
+ */
+
+@use './markdown-math.scss';
+
+/* ------------------------------------------------------------------
+ * 三栏布局：左右内容区与中间文章之间留一点缝隙
+ *
+ * 结构来自 layouts/post.vue：
+ *   .three-col
+ *     ├─ .left-column        （左栏，放侧边栏卡片）
+ *     ├─ .main-content       （中间文章）
+ *     └─ .right-aside        （右栏，目录）
+ *
+ * 用 margin 只给"贴边"的一侧留缝：
+ *   - 左栏 margin-right
+ *   - 右栏 margin-left
+ * 中间栏不设 margin，剩下的宽度它自己 flex:1 吸收。
+ * 外边缘（左栏左边、右栏右边）不留 margin，所以不会撑出视口横向滚动条。
+ * flex 布局下相邻 margin 不会合并，所以缝隙宽度就是 --post-col-gap。
+ * ------------------------------------------------------------------ */
+:root {
+  /* 栏目之间的缝隙，想更宽/更窄改这里 */
+  --post-col-gap: 1rem;
+}
+
+@media (width >= 1024px) {
+  .left-column {
+    margin-right: var(--post-col-gap);
+  }
+}
+
+@media (width >= 1280px) {
+  .right-aside {
+    margin-left: var(--post-col-gap);
+  }
+}
+
+/* ------------------------------------------------------------------
+ * Post 顶部封面图
+ *
+ * 用法：在文章 frontmatter 里写
+ *     cover: https://你的图床/xxx.jpg
+ * 就会在文章最上面渲染一张横幅大图（components/PostCover.vue）。
+ *
+ * 这里用 !important 覆盖，改成「填满宽度 + 固定高度 + 超出裁切」：
+ *   - 不会拉伸变形（object-fit: cover 只裁切）
+ *   - 竖图/横图都不会把页面撑得老高
+ * 想让头图保持原始比例（可能很高），把下面 height 换成 `height: auto !important`。
+ * ------------------------------------------------------------------ */
+.yun-cover {
+  border-radius: 1rem 1rem 0 0 !important;
+  width: 100% !important;
+  height: 320px !important;
+  object-fit: cover;
+  display: block;
+}
+
+/* 窄屏头图矮一点，避免占满整屏 */
+@media (max-width: 768px) {
+  .yun-cover {
+    height: 180px !important;
+  }
+}

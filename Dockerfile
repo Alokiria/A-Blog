@@ -1,16 +1,16 @@
-FROM node:20-alpine as build-stage
+# Valaxy 1.0 要求 Node.js >= 22.12.0
+FROM node:22-alpine AS build-stage
 
 WORKDIR /app
-RUN corepack enable
 
-COPY .npmrc package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store \
-    pnpm install --frozen-lockfile
+COPY package.json package-lock.json .npmrc ./
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
+    npm ci
 
 COPY . .
-RUN pnpm build
+RUN npm run build
 
-FROM nginx:stable-alpine as production-stage
+FROM nginx:stable-alpine AS production-stage
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=build-stage /app/dist /usr/share/nginx/html

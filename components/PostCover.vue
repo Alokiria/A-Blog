@@ -44,6 +44,12 @@ const referrerpolicy = computed(() => opts.value.referrerpolicy || 'no-referrer'
 </script>
 
 <template>
+  <!--
+    注意：头图【不能】用 loading="lazy"。
+    头图位于文章最顶部、首屏必然可见，lazy 只会把请求推迟到 hydration 之后，
+    反而给了"请求早于 referrerpolicy 生效"的竞态机会 —— 表现就是刷新时
+    头图偶发失效。这里保持即时加载。
+  -->
   <img
     v-if="src"
     class="yun-cover object-cover select-none"
@@ -51,6 +57,5 @@ const referrerpolicy = computed(() => opts.value.referrerpolicy || 'no-referrer'
     :alt="alt"
     :style="style"
     :referrerpolicy="referrerpolicy"
-    loading="lazy"
   >
 </template>

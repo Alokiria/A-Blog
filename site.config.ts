@@ -8,7 +8,7 @@ export default defineSiteConfig({
   subtitle: '朋友，你知道东方Project吗？',
   author: {
     name: '江若水',
-    avatar: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/t_251204051906_4.png',
+    avatar: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051906_4.png',
     intro: 'An aspiring Technical Artist'
   },
   description: '井底之蛙虽不知大海的辽阔，但会知道天空的湛蓝。',

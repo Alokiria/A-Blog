@@ -33,6 +33,21 @@ useHead({
       name: 'msapplication-TileColor',
       content: safeThemeColor,
     },
+    /**
+     * 文档级 Referrer 策略：整个站点对外请求一律不发送 Referer。
+     *
+     * 为什么必须放在这里（而不是只给 <img> 加 referrerpolicy）：
+     * 语雀 / 博客园等图床都配了 Referer 白名单，带上博客域名会直接 403。
+     * 给单个 <img> 加 referrerpolicy 存在竞态 —— 只要请求发起的时机早于
+     * 该属性生效（懒加载、hydration 重排等），就会带着 Referer 出去而被拦，
+     * 表现为"刷新时头图偶发失效"。
+     * 这条 meta 写在 HTML <head> 里，浏览器从解析到第一个字节就应用它，
+     * 因此页面上任何资源请求都不可能发出 Referer，从根上消除竞态。
+     */
+    {
+      name: 'referrer',
+      content: 'no-referrer',
+    },
   ],
 })
 

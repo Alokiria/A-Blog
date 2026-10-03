@@ -81,7 +81,7 @@ random: false
 <ValaxyGirls
   :girls="frontmatter.girls"
   :random="frontmatter.random"
-  layout="bubbles"
+  layout="grid"
   switchable
   reason-mode="hover"
 />

@@ -257,3 +257,11 @@ const BANGUMI_UID = ''                                        // Bangumi uid，�
   ```
 
 所有部署环境的 Node.js 都必须是 **>= 22.12.0**（Valaxy 1.0 的硬性要求，由 Vite 8 与 `unplugin-vue-markdown@32` 共同决定）。Node 18 / 20 不再支持。
+
+> ⚠️ **不要绕过 `npm run build` / `npm run build:ssg` 直接跑 `valaxy build --ssg`。**
+> 构建末尾还要执行 `scripts/decode-dist-paths.mjs`：因为路由 path 是百分号编码的
+> （浏览器地址栏、vue-router 匹配都用这一套），SSG 落盘的文件名会带着 `%E5…`，
+> 而托管平台会先把请求路径解一次码再找文件，中文目录的文章页就会 404。
+> 这个脚本把 dist 里的文件名还原成原始中文（`dist/posts/Godot大学习/一些…html`），
+> 链接和 sitemap 仍然保持编码形式。编码问题的完整来龙去脉见
+> `valaxy.config.ts` 里 `vitePluginSingleEncodedRoutePath` 的注释。

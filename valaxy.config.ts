@@ -1,3 +1,4 @@
+import type { Plugin } from 'vite'
 import type { UserThemeConfig } from 'valaxy-theme-yun'
 import { defineValaxyConfig } from 'valaxy'
 import { addonBangumi } from 'valaxy-addon-bangumi'
@@ -75,6 +76,85 @@ function mdPluginImageNoReferrer(md: any) {
       }
     }
   })
+}
+
+/**
+ * 让文章路由 path 保持「恰好一层」百分号编码。
+ *
+ * ── 为什么需要这个插件 ────────────────────────────────────────────────
+ *
+ * `vue-router/unplugin` 生成路由时**已经**对每个路径段做过一次百分号编码
+ * （unplugin 里的 `parseFileSegment` → `encodePath`），而 Valaxy 的
+ * `client/main.ts` 里还有一段号称「fix chinese path」的补丁，又对顶层路由的
+ * 直接子路由执行了一次 `encodeURI(j.path)`。两下一叠加，中文**目录段被编码了
+ * 两次**（`%E5` → `%25E5`），叶子文件名只有一次：
+ *
+ *   /posts/Godot%25E5%25A4%25A7%25E5%25AD%25A6%25E4%25B9%25A0/%E4%B8%80%E4%BA%9BGodot%E6%8F%92%E4%BB%B6%E6%8E%A8%E8%8D%90
+ *
+ * 由此带来三个问题：
+ *   1. 站内搜索（fuse 索引是从文件系统路径**只编码一次**生成的）里的链接
+ *      匹配不到任何路由 → 点搜索结果只会落到兜底的 `[...path]` 404 页；
+ *   2. 地址栏里的 URL 变成 `%25E5…` 这种「十六进制」样子，sitemap/RSS 同理；
+ *   3. SSG 是用路由 path 当输出文件名的，于是 dist 里落盘的是
+ *      `Godot%25E5…/一些….html` 这种名字；而托管平台（Vercel / Cloudflare Pages
+ *      等）会先把请求路径解一次码再去找文件，永远找不到 → 文章页 HTTP 状态
+ *      404，只是靠 SPA 在 404 页壳子里把文章渲染出来，看起来「能打开」。
+ *
+ * Valaxy 那次补丁在当下已经是多余的（unplugin 早就编码过一次了），所以这个插件
+ * 把它替换成「保证每个 path 恰好一层编码」的版本：已经编码过的原样不动，
+ * 万一哪天变成原始中文就编码一次。改的是 Valaxy 的源码文本，因此在
+ * `transform` 里做（`enforce: 'pre'`，确保在 TS 转译之前拿到源码）。
+ *
+ * ⚠️ 这里**不能**顺手把 path 还原成原始中文：浏览器上报的 `location.pathname`
+ * 是百分号编码过的，而 vue-router 是拿它跟 `route.path` 直接做字符串比较的
+ * （`vue-router` 的 `tokenizePath` 不做解码）。实测：原始中文的 route path、
+ * 以及双层编码的 route path 都匹配不到浏览器地址，只有单层编码对得上。
+ * 磁盘文件名那一半的中文还原，交给 `scripts/decode-dist-paths.mjs` 在构建末尾做。
+ *
+ * 想撤掉这个 workaround，只能等 Valaxy 自己修掉 `client/main.ts` 里那段。
+ */
+function vitePluginSingleEncodedRoutePath(): Plugin {
+  const valaxyHack = /\n\/\/ fix chinese path[\s\S]*?\n\}\)\n/
+  /**
+   * 按**内容**认文件，而不是按 id：dev 下这个模块的 id 带 query / 走别名，
+   * 用 `endsWith('valaxy/client/main.ts')` 认不出来（构建时 id 是干净的路径，
+   * 所以只在 dev 失效）。这段源码文本只可能出现在 Valaxy 的 main.ts 里。
+   */
+  const isValaxyClientMain = (code: string) => code.includes('// fix chinese path') && code.includes('encodeURI(j.path)')
+  const replacement = `
+// [A-Blog] 见 valaxy.config.ts 的 vitePluginSingleEncodedRoutePath：
+// 保证每个路由 path 恰好一层百分号编码（原样保留 unplugin 的编码结果）
+const fixRoutePath = (value: string) => {
+  try {
+    return decodeURI(value) === value ? encodeURI(value) : value
+  }
+  catch {
+    return value
+  }
+}
+const fixRoutePaths = (list: any[]) => {
+  for (const route of list || []) {
+    if (route && typeof route.path === 'string')
+      route.path = fixRoutePath(route.path)
+    if (route && Array.isArray(route.children))
+      fixRoutePaths(route.children)
+  }
+}
+fixRoutePaths(routes)
+`
+  return {
+    name: 'a-blog:single-encoded-route-path',
+    enforce: 'pre',
+    transform(code) {
+      if (!isValaxyClientMain(code))
+        return
+      if (!valaxyHack.test(code)) {
+        this.warn('[A-Blog] 找到了 Valaxy 的「fix chinese path」补丁，但没能按预期替换掉它（代码结构变了？）。若中文路由出现双层编码（%25E5…），需要同步更新 vitePluginSingleEncodedRoutePath。')
+        return
+      }
+      return code.replace(valaxyHack, replacement)
+    },
+  }
 }
 
 /**
@@ -267,6 +347,7 @@ export default defineValaxyConfig<UserThemeConfig>({
 
   vite: {
     plugins: [
+      vitePluginSingleEncodedRoutePath(),
       groupIconVitePlugin(),
     ],
 

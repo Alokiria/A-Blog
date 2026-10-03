@@ -6,6 +6,8 @@
  * 卡片尺寸故意做得小，一行能放很多张。
  */
 import type { AlbumCard } from '../../albums'
+import { useAlbumThumb } from '../../composables/album-thumb'
+import { useAlbumZoom } from '../../composables/album-zoom'
 import { useTagFilter } from '../../composables/tag-filter'
 import { isClient, useScrollLock } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
@@ -35,15 +37,31 @@ const {
   getSearchText: c => [c.name, c.meta ?? '', c.desc ?? '', ...(c.tags ?? [])],
 })
 
-const failed = ref<Set<number>>(new Set())
-
-function markFailed(i: number) {
-  failed.value = new Set(failed.value).add(i)
-}
-
 /** filtered 里的项 → 原数组下标（用于记失败状态） */
 function originIndex(card: AlbumCard) {
   return props.cards.indexOf(card)
+}
+
+/**
+ * 网格里显示的缩略图：写了 `cover` 就用 `cover`，否则用原图 `src`；
+ * `cover` 加载失败会自动退回 `src`，两个都挂了才显示占位图标
+ * （逻辑见 composables/album-thumb.ts）。
+ */
+const { srcOf: thumbOf, isBroken, markFailed: markThumbFailed } = useAlbumThumb()
+
+/** 某项当前该显示的缩略图地址 */
+function thumbUrl(card: AlbumCard) {
+  return thumbOf(card, originIndex(card))
+}
+
+/** 某项的缩略图和原图是不是都加载失败了 */
+function thumbBroken(card: AlbumCard) {
+  return isBroken(card, originIndex(card))
+}
+
+/** 缩略图加载失败：先退回原图，原图也失败才显示占位图标 */
+function onThumbError(card: AlbumCard) {
+  markThumbFailed(card, originIndex(card))
 }
 
 /* ---------------- 大图 ---------------- */
@@ -51,6 +69,26 @@ function originIndex(card: AlbumCard) {
 const index = ref(-1)
 const open = computed(() => index.value >= 0)
 const current = computed<AlbumCard | undefined>(() => filtered.value[index.value])
+
+/**
+ * 大图缩放：滚轮 / 双指 / 双击，逻辑见 composables/album-zoom.ts。
+ * 传 `current` 进去，换图时自动回到原始大小。
+ */
+const {
+  stage,
+  image,
+  panning,
+  zoomed,
+  zoomLabel,
+  zoomTitle,
+  imageStyle,
+  resetZoom,
+  onWheel,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onDoubleClick,
+} = useAlbumZoom(current)
 
 if (isClient)
   useScrollLock(document.body, open)
@@ -157,13 +195,13 @@ watch(open, (isOpen) => {
       <figure v-for="(card, i) in filtered" :key="`${card.src}-${i}`" class="card-item">
         <button type="button" class="card-item__trigger" :title="card.name" @click="index = i">
           <img
-            v-if="!failed.has(originIndex(card))"
+            v-if="!thumbBroken(card)"
             loading="lazy"
             decoding="async"
             referrerpolicy="no-referrer"
-            :src="card.src"
+            :src="thumbUrl(card)"
             :alt="card.name"
-            @error="markFailed(originIndex(card))"
+            @error="onThumbError(card)"
           >
           <span v-else class="card-item__broken" aria-hidden="true">
             <span i-ri-image-2-line />
@@ -197,12 +235,40 @@ watch(open, (isOpen) => {
           </button>
 
           <div class="album-lightbox__body">
-            <img referrerpolicy="no-referrer" :src="current.src" :alt="current.name">
+            <!-- 缩放舞台：滚轮 / 双指 / 双击在这里生效，放大后可拖动 -->
+            <div
+              ref="stage"
+              class="album-lightbox__stage"
+              :class="{ 'is-zoomed': zoomed, 'is-grabbing': panning }"
+              @wheel.prevent="onWheel"
+              @dblclick="onDoubleClick"
+              @pointerdown="onPointerDown"
+              @pointermove="onPointerMove"
+              @pointerup="onPointerUp"
+              @pointercancel="onPointerUp"
+            >
+              <img
+                ref="image"
+                referrerpolicy="no-referrer"
+                :src="current.src"
+                :alt="current.name"
+                :style="imageStyle"
+                draggable="false"
+              >
+            </div>
             <div class="album-lightbox__meta">
               <span>{{ current.name }}</span>
               <span v-if="current.meta" class="op-60">{{ current.meta }}</span>
               <span class="op-50">{{ index + 1 }} / {{ filtered.length }}</span>
               <a :href="current.src" target="_blank" rel="noopener noreferrer" class="album-lightbox__link">查看原图</a>
+              <button
+                class="album-lightbox__zoom"
+                :class="{ 'is-zoomed': zoomed }"
+                :title="zoomTitle"
+                @click="resetZoom"
+              >
+                {{ zoomLabel }}
+              </button>
             </div>
             <!-- 简介：单独占一行，长文本可读性更好 -->
             <p v-if="current.desc" class="album-lightbox__desc">

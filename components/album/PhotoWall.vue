@@ -6,6 +6,8 @@
  * 用 JS 按窗口宽度分列做真正的瀑布流，图片保持原始宽高比，一行能放很多张。
  */
 import type { AlbumPhoto } from '../../albums'
+import { useAlbumThumb } from '../../composables/album-thumb'
+import { useAlbumZoom } from '../../composables/album-zoom'
 import { useTagFilter } from '../../composables/tag-filter'
 import { isClient, useScrollLock } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -35,17 +37,40 @@ const {
   getSearchText: p => [p.name, p.desc ?? '', ...(p.tags ?? [])],
 })
 
-const failed = ref<Set<number>>(new Set())
-
-function markFailed(i: number) {
-  failed.value = new Set(failed.value).add(i)
-}
+/**
+ * 网格里显示的缩略图：写了 `cover` 就用 `cover`，否则用原图 `src`；
+ * `cover` 加载失败会自动退回 `src`，两个都挂了才显示占位图标
+ * （逻辑见 composables/album-thumb.ts）。
+ *
+ * 这里和网格下标一样用 `item.origin`（filtered 里的位置）来记失败状态。
+ */
+const { srcOf: thumbOf, isBroken, markFailed: markThumbFailed } = useAlbumThumb()
 
 /* ---------------- 大图 ---------------- */
 
 const index = ref(-1)
 const open = computed(() => index.value >= 0)
 const current = computed<AlbumPhoto | undefined>(() => filtered.value[index.value])
+
+/**
+ * 大图缩放：滚轮 / 双指 / 双击，逻辑见 composables/album-zoom.ts。
+ * 传 `current` 进去，换图时自动回到原始大小。
+ */
+const {
+  stage,
+  image,
+  panning,
+  zoomed,
+  zoomLabel,
+  zoomTitle,
+  imageStyle,
+  resetZoom,
+  onWheel,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onDoubleClick,
+} = useAlbumZoom(current)
 
 if (isClient)
   useScrollLock(document.body, open as any)
@@ -198,13 +223,13 @@ const columns = computed(() => {
         <figure v-for="item in col" :key="`${item.photo.src}-${item.origin}`" class="photo-item">
           <button type="button" :title="item.photo.name" @click="index = item.origin">
             <img
-              v-if="!failed.has(item.origin)"
+              v-if="!isBroken(item.photo, item.origin)"
               loading="lazy"
               decoding="async"
               referrerpolicy="no-referrer"
-              :src="item.photo.src"
+              :src="thumbOf(item.photo, item.origin)"
               :alt="item.photo.name"
-              @error="markFailed(item.origin)"
+              @error="markThumbFailed(item.photo, item.origin)"
             >
             <span v-else class="photo-item__broken" aria-hidden="true">
               <span i-ri-image-2-line />
@@ -225,11 +250,39 @@ const columns = computed(() => {
           </button>
 
           <div class="album-lightbox__body">
-            <img referrerpolicy="no-referrer" :src="current.src" :alt="current.name">
+            <!-- 缩放舞台：滚轮 / 双指 / 双击在这里生效，放大后可拖动 -->
+            <div
+              ref="stage"
+              class="album-lightbox__stage"
+              :class="{ 'is-zoomed': zoomed, 'is-grabbing': panning }"
+              @wheel.prevent="onWheel"
+              @dblclick="onDoubleClick"
+              @pointerdown="onPointerDown"
+              @pointermove="onPointerMove"
+              @pointerup="onPointerUp"
+              @pointercancel="onPointerUp"
+            >
+              <img
+                ref="image"
+                referrerpolicy="no-referrer"
+                :src="current.src"
+                :alt="current.name"
+                :style="imageStyle"
+                draggable="false"
+              >
+            </div>
             <div class="album-lightbox__meta">
               <span>{{ current.name }}</span>
               <span class="op-50">{{ index + 1 }} / {{ filtered.length }}</span>
               <a :href="current.src" target="_blank" rel="noopener noreferrer" class="album-lightbox__link">查看原图</a>
+              <button
+                class="album-lightbox__zoom"
+                :class="{ 'is-zoomed': zoomed }"
+                :title="zoomTitle"
+                @click="resetZoom"
+              >
+                {{ zoomLabel }}
+              </button>
             </div>
             <!-- 简介：单独占一行，长文本可读性更好 -->
             <p v-if="current.desc" class="album-lightbox__desc">

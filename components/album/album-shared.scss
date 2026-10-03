@@ -318,16 +318,94 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-width: min(1400px, 92vw);
+  /*
+   * 占满灯箱可用宽度（而不是被图片「适应窗口」后的小尺寸撑开）。
+   * 否则放大后图片会被下面那个 overflow: hidden 的舞台裁成一条窄缝：
+   * 明明放到了 100%，却只能从一个小窗口里看。
+   *
+   * 横向宽窄就调这两个数：`1200px` 是超宽屏上的上限，`86vw` 是普通屏幕上
+   * 「最多占视口的百分之几」—— 调大 = 更宽、左右留白更少。
+   */
+  width: min(1200px, 86vw);
+  max-width: 100%;
+  min-width: 0;
   max-height: 100%;
 
   img {
     display: block;
     max-width: 100%;
-    max-height: 80vh;
+    /*
+     * 相对舞台（而不是 80vh）限制高度：舞台是 flex 项，名字/简介很长时会被压矮，
+     * 用 80vh 的话图片就会比舞台还高、上下被切掉一截。
+     */
+    max-height: 100%;
     margin: 0 auto;
     border-radius: 6px;
     object-fit: contain;
+  }
+}
+
+/*
+ * 缩放舞台：固定成灯箱的可用区域，图片在里面居中。
+ *
+ * - 1x（适应窗口）时：图片按 max-width/max-height 缩放后居中，舞台大小不变
+ * - 放大后：图片用 transform 撑出舞台，多出来的部分被 overflow 裁掉，
+ *   舞台本身就是那个「可视窗口」，拖动范围也按它算
+ *
+ * `touch-action: none` 是关键 —— 关掉浏览器自带的手势，双指缩放才交给我们处理。
+ * `cursor: zoom-in` / `grab` 提示这里可以缩放、放大后可以拖。
+ */
+.album-lightbox__stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 80vh;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  touch-action: none;
+  cursor: zoom-in;
+
+  img {
+    transform-origin: center center;
+    // will-change: transform;
+    user-select: none;
+    -webkit-user-drag: none;
+    /* 长按不弹系统菜单，免得和拖动 / 缩放打架 */
+    -webkit-touch-callout: none;
+  }
+
+  &.is-zoomed {
+    cursor: grab;
+  }
+
+  &.is-zoomed.is-grabbing {
+    cursor: grabbing;
+  }
+}
+
+/* 缩放状态：和「查看原图」并排，放大后点它回到原始大小 */
+.album-lightbox__zoom {
+  padding: 2px 10px;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 12px;
+  color: rgb(255 255 255 / 0.8);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background: rgb(255 255 255 / 0.16);
+    color: #fff;
+  }
+
+  &.is-zoomed {
+    border-color: var(--va-c-primary);
+    color: #fff;
   }
 }
 
@@ -357,6 +435,9 @@
 /*
  * 大图下方的简介。
  * 与上面那行「名字 / 序号 / 查看原图」分两行显示，长文本换行而不是挤在一起。
+ *
+ * 简介太长时自己滚动（约 8 行以内显示完整，再长就在框里滚），
+ * 免得把大图一路挤到看不见、甚至顶出屏幕。
  */
 .album-lightbox__desc {
   max-width: min(760px, 92vw);
@@ -368,6 +449,50 @@
   /* 保留作者写的换行，同时长英文/链接也能断开 */
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+
+  /* 14em ≈ 8 行；想多显示几行就调大它 */
+  max-height: 14em;
+  overflow-y: auto;
+  /* 滚到底不要连带滚动背后的页面 */
+  overscroll-behavior: contain;
+
+  /*
+   * 滚动条平时不显示：轨道透明、滑块也透明，但槽位始终占着那 6px，
+   * 所以鼠标移进简介区域时它浮出来，文字不会跟着重新排版。
+   */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: transparent;
+  }
+
+  /* 鼠标移到简介上才把滑块显出来 */
+  &:hover {
+    scrollbar-color: rgb(255 255 255 / 0.32) transparent;
+
+    &::-webkit-scrollbar-thumb {
+      background: rgb(255 255 255 / 0.3);
+    }
+  }
+
+  /* 触屏没有 hover，给个很淡的滑块，免得完全看不出这里能滚 */
+  @media (hover: none) {
+    scrollbar-color: rgb(255 255 255 / 0.22) transparent;
+
+    &::-webkit-scrollbar-thumb {
+      background: rgb(255 255 255 / 0.22);
+    }
+  }
 }
 
 .album-lightbox__close,

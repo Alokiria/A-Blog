@@ -1,22 +1,47 @@
 /**
- * 画廊数据（单一数据源）。
+ * 画廊数据加载器（唯一入口）。
  *
- * 设计取向：**只用这一个文件 + 一个页面**。
- * 整个 `/albums/` 由 `pages/albums/index.md` 渲染，画廊之间的跳转是页面内状态
- * （同时同步到 URL query，刷新和分享链接都能还原），因此：
- *   - 随便嵌套多少层都不需要新建文件
- *   - 不需要动态路由，SSG 静态导出完全没问题
+ * ⚠️ 画册数据**不写在这个文件里**，而是放在项目根目录的 `gallery/` 文件夹里，
+ * 一个画册一个文件夹，这里只负责在构建时把它们读出来、拼成画廊树：
  *
- * 三种节点类型：
- *   - `albums` 画廊分组：内部再放子画廊，可无限嵌套
- *   - `cards`  卡片图鉴：带搜索框 + 标签筛选，卡片下面写名字（类似手游卡图合集）
- *   - `photos` 普通画廊：纯图片网格（图片下方不写名字），点开有大图
+ *   gallery/
+ *     astrae-oratio-card-original/   ← 文件夹名随便起，建议和 id 一致
+ *       album.ts                     ← 必须有：这个画册的 id / cover / caption / desc
+ *       cards.ts                     ← 可选：卡片图鉴数据（default export AlbumCard[]）
+ *     demo-pictures/
+ *       album.ts
+ *       photos.ts                    ← 可选：普通画廊数据（default export AlbumPhoto[]）
+ *     demo-group/                    ← 里面还有子文件夹 = 画廊分组
+ *       album.ts
+ *       demo-group-1/
+ *         album.ts
+ *         cards.ts
+ *
+ * 读取用 Vite 的 `import.meta.glob`：**构建期静态展开**，所以 SSG 静态导出完全没问题，
+ * 也不需要任何 Node 读写文件的代码（浏览器里照样能跑）。
+ *   - 新增画册 = 新建文件夹 + `album.ts`，这个文件一个字都不用改
+ *   - 文件夹嵌套几层，画廊树就嵌套几层；子文件夹自动成为子画廊
+ *   - 只有 `album.ts` / `cards.ts` / `photos.ts` 会被打包，同目录放 md、草稿、原图都不影响
+ *   - 名字以 `_` 开头的文件夹 / 文件会被忽略（临时下线一个画册：给文件夹名加个下划线）
+ *   - 忘了写 `album.ts` 也不会丢数据：中间层文件夹会按文件夹名生成分组节点
+ *
+ * 三种节点类型（沿用原来的约定，由文件夹里有哪些数据文件决定）：
+ *   - `albums` 画廊分组：文件夹里有子文件夹，内部再放子画廊，可无限嵌套
+ *   - `cards`  卡片图鉴：有 cards.ts，带搜索框 + 标签筛选，卡片下面写名字
+ *   - `photos` 普通画廊：有 photos.ts，纯图片网格（图片下方不写名字），点开有大图
  */
 
 /** 卡片图鉴里的一张卡 */
 export interface AlbumCard {
-    /** 图片地址 */
+    /** 点开大图后看到的那张图（原图） */
     src: string
+    /**
+     * 网格里显示的缩略图封面。
+     *
+     * 不写就用 `src` 自己当封面；写了就能「列表看小图、点开看原图」，
+     * 例如网格用压缩过的小图、点开才是大图，省流量也更快。
+     */
+    cover?: string
     /** 名字，显示在图片下方 */
     name: string
     /** 附注信息，显示在名字下方一行小字（日期、画师、分类等） */
@@ -29,7 +54,14 @@ export interface AlbumCard {
 
 /** 普通画廊里的一张照片 */
 export interface AlbumPhoto {
+    /** 点开大图后看到的那张图（原图） */
     src: string
+    /**
+     * 网格里显示的缩略图封面。
+     *
+     * 不写就用 `src` 自己当封面；写了就能「列表看小图、点开看原图」。
+     */
+    cover?: string
     /** 名字。图片下方不显示，用于搜索、悬停提示和大图标题 */
     name: string
     /** 简介，点开大图后显示在图片下方 */
@@ -38,7 +70,34 @@ export interface AlbumPhoto {
     tags?: string[]
 }
 
-/** 画廊分组里的一个子画廊 */
+/**
+ * `gallery/<画册>/album.ts` 的默认导出形状。
+ *
+ * 除了 id / cover 之外都能省：
+ *   - 不写 `id` → 用文件夹名
+ *   - 不写 `caption` → 用文件夹名
+ *   - 不写 `cover` → 用 cards.ts / photos.ts 的第一张图
+ *   - 不写 `order` → 和其他画册一起按文件夹名排序（`order` 越小越靠前）
+ *   - 懒得分成两个文件时，也可以直接在 album.ts 里写 `cards` / `photos`
+ */
+export interface AlbumMeta {
+    /** 唯一 id，用于 URL query（`?a=<id>`）和打开状态；默认取文件夹名 */
+    id?: string
+    /** 封面图；不写就用该画册第一张图的 cover，没有 cover 就用它的 src */
+    cover?: string
+    /** 画廊名，卡片下方显示；默认取文件夹名 */
+    caption?: string
+    /** 描述，鼠标悬停时的 title 提示 */
+    desc?: string
+    /** 排序权重，越小越靠前；不写按 0 算，同权重再按文件夹名排 */
+    order?: number
+    /** 卡片图鉴数据（等价于同目录的 cards.ts） */
+    cards?: AlbumCard[]
+    /** 普通画廊数据（等价于同目录的 photos.ts） */
+    photos?: AlbumPhoto[]
+}
+
+/** 画廊分组里的一个子画廊（也就是 `gallery/` 里的一个文件夹） */
 export interface AlbumEntry {
     /** 唯一 id，用于 URL query（`?a=<id>`）和打开状态 */
     id: string
@@ -48,10 +107,10 @@ export interface AlbumEntry {
     /** 描述，鼠标悬停时的 title 提示 */
     desc?: string
     /**
-     * 子画廊；有 children 就是「画廊分组」。
+     * 子画廊；有 children 就是「画廊分组」，内容来自本文件夹的子文件夹。
      *
      * 卡片右下角的「N 张」角标是**自动统计**的（递归累加 cards/photos 的长度），
-     * 不需要在这里手写，所以没有 badge 字段。
+     * 不需要在数据里手写，所以没有 badge 字段。
      */
     children?: AlbumEntry[]
     /** 卡片图鉴数据 */
@@ -60,356 +119,186 @@ export interface AlbumEntry {
     photos?: AlbumPhoto[]
 }
 
+/* ------------------------------------------------------------------ *
+ * 读取 gallery/ 文件夹
+ * ------------------------------------------------------------------ */
+
+type Module<T> = { default: T }
+
 /**
- * 画廊树。顶层节点就是 `/albums/` 页面上的一行卡片。
+ * 名字以 `_` 开头的文件 / 文件夹一律忽略（连打包都不会进）。
  *
- * 下面三个是示例，结构可以直接照抄：
- *   - `demo-cards`     卡片图鉴（有搜索 + 标签筛选）
- *   - `demo-pictures`  普通画廊（图片网格 + 名字）
- *   - `demo-group`     画廊分组（里面又套了上面两种）
+ * 想临时下线一个画册，把它的文件夹改名成 `_xxx` 就够了，数据不用删；
+ * 半成品画册也可以先叫 `_draft` 放着。
+ *
+ * ⚠️ `import.meta.glob` 只认字面量，这些模式必须一行行写死，不能抽成变量再展开。
  */
-export const albumTree: AlbumEntry[] = [
-    {
-        id: 'astrae-oratio-card-original',
-        cover: 'https://img2024.cnblogs.com/blog/3739951/202610/3739951-20261001164025564-1143025385.png',
-        caption: '阿索拉 星之祈愿 首曝人物',
-        desc: '阿索拉首曝人物展示',
-        cards: [
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001081438_%E5%B9%B3%E5%92%8C%E5%B2%B8%E7%81%AF%E7%88%B1.jpg',
-                name: '平和岸灯爱',
-                meta: '里令指定特例区域管理厅',
-                desc: '「我是这里的负责人，平和岸灯爱厅长。今后还请多多指教。」\n\n 特区厅的最高负责人，同时也是擅自将主任调任至特区厅的始作俑者。\n 她在自己的办公室里摆满了各式各样的玩具。\n 身为主任的直属上司，但无论怎么看，都称不上是能成为他人榜样的人。\n 从各方面来说，都是一位让人摸不透的神秘女子。',
-                tags: ['里令指定特例区域管理厅']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001081438_%E4%B8%BB%E4%BB%BB.jpg',
-                name: '主任',
-                meta: '里令指定特例区域管理厅',
-                desc: '「我不是什么了不起的人…… 我不是魔法师，也没有特别的能力。」\n\n 不是魔法师的平凡东京公务员。',
-                tags: ['里令指定特例区域管理厅']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001083245_%E7%8E%A9%E5%81%B6.jpg',
-                name: '玩偶',
-                meta: '里令指定特例区域管理厅',
-                desc: '「请放心，我会保护您的。」\n\n 厅长为了保护主任而制造的临时保镖。 除了身体是木制的，其他资讯一概不明。',
-                tags: ['里令指定特例区域管理厅']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001083246_%E5%B0%8F%E6%98%9F.jpg',
-                name: '小星',
-                meta: '里令指定特例区域管理厅',
-                desc: '「哇哈哈哈哈，没有比这里更好的地方了吧？」\n\n 特区厅宣传用吉祥物。 充分体现厅长喜好的设计。',
-                tags: ['里令指定特例区域管理厅']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001083246_%E5%B9%B3%E5%92%8C%E5%B2%B8%E7%81%AF%E7%88%B1%EF%BC%88%E5%92%8C%E6%9C%8D%EF%BC%89.jpg',
-                name: '平和岸灯爱（和服）',
-                meta: '里令指定特例区域管理厅',
-                desc: '「来吧，所以告诉我。你的梦想是什么？」\n\n 平和岸灯爱厅长的魔法师服装。',
-                tags: ['里令指定特例区域管理厅']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001083246_%E4%B8%BB%E4%BB%BB%EF%BC%88%E8%AF%85%E5%92%92%E7%8A%B6%E6%80%81%EF%BC%89.jpg',
-                name: '主任（诅咒状态）',
-                meta: '里令指定特例区域管理厅',
-                desc: '「这…… 到底…… 是怎么一回事？！」\n\n 主任某天从噩梦惊醒后，发现自己变成一只猫。',
-                tags: ['里令指定特例区域管理厅']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001084208_%E6%97%97%E6%89%8B.jpg',
-                name: '旗手',
-                meta: '里内阁',
-                desc: '「我要取出这个男人的心脏和脑袋，让他变成一尊活雕像。」\n\n 身分不明的集团里内阁官员，控制着东京的魔法世界。\n他们现在的形像只是伪装，因为这个世界容不下真实的他们。',
-                tags: ['里内阁']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001084018_%E6%AD%BB%E4%BA%A1%E9%9D%A2%E5%85%B7.jpg',
-                name: '死亡面具',
-                meta: '里内阁',
-                desc: '「我们是隐匿的神秘，世界的边界，也是神话的遗产！！ 我们不会再被城市和行政这种文字游戏给耍了！！」\n\n 是旗手的化身，也是城市这个概念人格化的存在。',
-                tags: ['里内阁']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001085539_%E7%94%B0%E4%B8%AD%E7%BB%98%E7%90%B3.jpg',
-                name: '田中绘琳',
-                meta: '港区少女们的魔法活动',
-                desc: '「咦？难道主任对我有所期望吗？」\n\n 在日本出生长大的普通日本平民国中生。 母亲拥有爱尔兰血统，因此外表看起来简直就像是西方人，但她其实只是个再普通不过的日本人。（顺带一提，她不会英文。）\n在升上国中前，一直过着平凡的日常生活，但因某种契机，与璃璃爱和安娜相遇，并得知自己其实是早已失传的神话魔法使用者。\n此后，绘琳与安娜、璃璃爱一同展开身为魔法师的秘密活动，并逐渐被卷入东京发生的各种魔法师事件之中。',
-                tags: ['港区少女们的魔法活动']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001085540_%E5%B1%80%E9%95%BF.jpg',
-                name: '局长',
-                meta: '领地管理会特区厅分部',
-                desc: '「如果道歉就能解决问题，那怎么还会有悔过书呢～♬」\n\n 长相非常可爱，却对部下管理严格的可怕局长。\n无论是谁做了什么、犯了什么错，她都能神不知鬼不觉地了若指掌。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001090143_%E5%AE%89%E5%A8%9C%C2%B7M%C2%B7%E5%B7%B4%E8%97%A4%E8%B4%9D%E6%A0%BC.jpg',
-                name: '安娜·M·巴藤贝格',
-                meta: '港区少女们的魔法活动',
-                desc: '「原本以为会是平静的校园生活…… 不过，这样也不赖。」\n\n 出身于维也纳的贵族千金。\n全名为安娜・玛莉・冯・巴藤贝格。\n自从祖父那一代对家族长年的恶习感到厌倦之后，「寻找合适的婚配对象」便成了家族最优先的大事。\n也因此，整个家族如今都对安娜的恋爱动向格外敏感，让她各方面都相当心累。\n目前她住在退休家族管家于东京开设的花店楼上，而那位管家不知为何，早已把主任当成安娜未来夫婿的人选了。',
-                tags: ['港区少女们的魔法活动']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001090143_%E7%AE%A1%E7%90%86%E5%AE%98.jpg',
-                name: '管理官',
-                meta: '领地管理会特区厅分部',
-                desc: '「嗯？你说工作做不完？ 这不是理所当然的吗？」\n\n 板着脸一丝不苟办事的领地管理会实际负责人。\n身为管理会的实际领导人，负责处理和收拾特区厅发生的大小事。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001090142_%E8%97%A4%E6%99%B4%E7%92%83%E7%92%83%E7%88%B1.jpg',
-                name: '藤晴璃璃爱',
-                meta: '港区少女们的魔法活动',
-                desc: '「魔法师！少女！ 全是让人心跳加速的字眼！」\n\n 出身于名门望族的千金，同时也是拥有能使用古代巫女魔法之特殊力量的魔法师。\n因为某些原因转学到港区中学，和绘琳及安娜相识，享受着平凡的学生生活。',
-                tags: ['港区少女们的魔法活动']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001090143_%E4%BA%8B%E5%8A%A1%E7%B3%BB.jpg',
-                name: '事务系',
-                meta: '领地管理会特区厅分部',
-                desc: '「不好意思，主任，这些都是今天必须处理的资料。」\n\n 神色疲惫，天天都在做文书工作的事务负责人。\n看起来睡眠不足。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001090603_%E6%95%B4%E5%A4%87%E7%B3%BB.jpg',
-                name: '整备系',
-                meta: '领地管理会特区厅分部',
-                desc: '「有快递！我下次不会再帮你收了，你要自己去拿喔！」\n\n 负责维护设施。\n虽然个性有点难搞刻薄，但一旦出现问题，总能迅速出手解决。\n除了维护设施，整体业务能力也相当出色。\n然而，他对上会被事务系责备，对下又得收拾杂务系闯下的烂摊子，处境相当艰难。\n甚至有人说没有整备系，整个管理体系就将无法运作。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001090607_%E6%9D%82%E5%8A%A1%E7%B3%BB.jpg',
-                name: '杂务系',
-                meta: '领地管理会特区厅分部',
-                desc: '「喔──好厉害的说。」\n\n 杂务负责人。\n总是以天真无邪的表情引发问题的麻烦精。\n实习生好像都很尊敬她。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001090721_%E8%A1%A5%E7%BB%99%E7%B3%BB.jpg',
-                name: '补给系',
-                meta: '领地管理会特区厅分部',
-                desc: '「怎么样？把主任的照片做成周边，高价卖给魔法师们？」\n\n 任职于特区厅周边商品店的补给负责人。\n个性有点狡猾，表情变化丰富。\n由于这里是特区厅工作最轻松的地方，她总能悠哉地摸鱼。\n和管理官是同一梯的，关系对等、说话随意，但一旦对方发火，还是会识相地退让一步。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095223_%E4%B8%89%E5%A3%B0%E7%91%A0%E5%A5%88.jpg',
-                name: '三声瑠奈',
-                meta: '清兰同好会',
-                desc: '（主任，再过 10 年，说不定就会变成我喜欢的类型了……）\n\n 不动产财阀家族三声的独生女。\n 她本来并不是千金，家族因某次惊人的房地产暴涨，才一举成为超级财阀。\n 祖父虽然富有，却坚持维持平民的生活方式，而父亲则渴望过上真正的富豪生活，两者之间长期存在冲突。\n 瑠奈自幼由祖父抚养，直到小学三年级祖父过世后，才回到父亲身边，开始过起真正的千金生活。\n 她非常珍惜与祖父的回忆，同时也是个对年长成熟男性毫无抵抗力的重度大叔控。\n 她深信再过个十年左右，主任就会变成她的理想型中年男性。',
-                tags: ['清兰同好会']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095223_%E8%BD%BB%E5%85%89%E7%9C%9F%E5%AE%B5.jpg',
-                name: '轻光真宵',
-                meta: '清兰同好会',
-                desc: '「我那么可爱，没办法将视线从我身上移开吧？」\n\n 日本财阀界前十大家族之一的千金小姐。\n 身为富裕的财阀千金，她使用的是会随意消耗昂贵宝石的宝石魔法。\n 虽然戴着牙齿矫正器，却丝毫不觉得丢脸。\n 个性有点任性，对他人态度也较为随便，但在人际关系上仍懂得拿捏分寸，在必要时也会展现出意外有礼貌且体贴的一面。',
-                tags: ['清兰同好会']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095223_%E4%B8%8D%E7%9F%A5%E7%81%AB%E6%81%8B.jpg',
-                name: '不知火恋',
-                meta: '清兰同好会',
-                desc: '「……………」\n\n 瑠奈与真宵的帮手、跑腿兼朋友，朋友关系相当复杂的少女。\n 她其实是三声家族和轻光家族派来的保镖兼杀手。\n 看起来好像有社交障碍，但又说不太上来究竟是不是…… 总之，是个充满谜团的少女。\n 不知为何，她偶尔会用肉食动物般的微妙眼神看着主任。',
-                tags: ['清兰同好会']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095333_%E6%8A%80%E6%9C%AF%E7%B3%BB.jpg',
-                name: '技术系',
-                meta: '领地管理会特区厅分部',
-                desc: '「哇喔喔喔喔喔──！要上了喔──！」\n\n 负责技术相关工作的成员。\n 基本上是个充满活力与热情的人。\n 但她总是不假思索地往前冲，反而把问题越搞越大。\n 也因此经常被资历比自己浅的整备系成员责备，但她完全不会气馁。\n 好像和杂务系的人特别合得来。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095333_%E5%88%86%E6%9E%90%E7%B3%BB.jpg',
-                name: '分析系',
-                meta: '领地管理会特区厅分部',
-                desc: '「对、对不起…… 你、你那样看着我…… 会让我很困扰……」\n\n 负责分析情报。\n 和其他成员不同，似乎对自己身材高大这点感到自卑，总是下意识想躲避主任的视线。\n 但能力十分优秀，甚至会自主加班，责任感极强，是个相当可靠的成员。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095333_%E7%A7%8B%E6%B4%A5%E6%98%8E%E8%8F%9C.jpg',
-                name: '秋津明菜',
-                meta: '明菜怪谈研究所',
-                desc: '「我叫明菜，是 <明菜怪谈研究所> 的所长。 有任何委托随时都可以告诉我！」\n\n 她是魔法师社群 < 明菜怪谈研究所 > 的所长，平时以大熊高中的电影鉴赏社作为掩护。\n 主要从事 <怪谈狩猎>，搜集并分析流传于都市中的怪谈，查明其真相。\n 她会使用将炼金术与化学结合而成的独门技术所打造的魔法道具，不过似乎很少做出真正派得上用场的成品。',
-                tags: ['明菜怪谈研究所']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095333_%E9%95%9C%E5%8E%9F%E6%98%A5.jpg',
-                name: '镜原春',
-                meta: '明菜怪谈研究所',
-                desc: '「其实我刚去社团教室看完电影回来。 我的头发有点乱，可以请你帮我整理吗？」\n\n 在朋友面前，她是如花朵般楚楚可怜、清纯可人的千金小姐；但一回到社团教室，就会瘫在沙发上欣赏 B 级血腥砍杀电影，是个过着双面生活的魔法师。\n 她最喜欢冷门系列 <新宿中式菜刀事件>，甚至还把自己的召唤兽塑造成与片中杀人魔相同的模样。',
-                tags: ['明菜怪谈研究所']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095333_%E6%9C%9D%E4%BB%93%E7%9C%9F%E8%A1%A3.jpg',
-                name: '朝仓真衣',
-                meta: '明菜怪谈研究所',
-                desc: '「比起魔法，我更擅长运动，我只是努力做擅长的事罢了。」\n\n 以全国高中综合体育大会为目标的田径队王牌。\n 原本是魔法师，但比起以魔法师的身分生活，她选择以普通人身分过日子，并将重心放在田径队活动。\n 话不多、个性冷淡，给人难以接近的印象，但她其实只是个喜欢可爱玩偶的普通少女…\n 不过，她会穿着运动服上课或在闹区闲晃，似乎缺乏某些方面的常识。',
-                tags: ['明菜怪谈研究所']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095542_%E4%B9%9D%E6%9D%A1%E7%94%B1%E7%90%86%E4%BA%9A.jpg',
-                name: '九条由理亚',
-                meta: '见回组',
-                desc: '「嗯。闪闪发亮。 原来如此，东京的魔法还真是华丽啊。」\n\n 来自京都，目前正锁定主任性命的魔法师。\n 除此之外的资讯皆笼罩在谜团之中。\n 不过，坊间流传着一个惊人的小道消息：据说她的初吻，是被主任给「夺走」的……？',
-                tags: ['见回组']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095542_%E7%BB%B4%E5%A1%94%C2%B7%E5%86%85%E8%8E%89.jpg',
-                name: '维塔·内莉',
-                meta: '灰烬黎明会',
-                desc: '「特区厅的主任…… 他是这座城市里最危险的男人。」\n\n 在与罗马的魔法战争中战败后，分散于世界各地，试图重建组织的秘密结社「灰烬黎明会」的东京分部代表。\n 除了出身于佛罗伦萨之外，其余一切皆是个谜。',
-                tags: ['灰烬黎明会']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095542_%E8%B4%A2%E9%83%A8%E5%8D%83%E6%99%AF.jpg',
-                name: '财部千景',
-                meta: '文京的玫瑰',
-                desc: '「毕竟东大生可是一流的，什么忙都能帮上。」\n\n 守护文京区和平的自警团 <文京的玫瑰> 领袖。\n 正因为学生时代付出了血汗般的努力才考进东京大学，所以对自己的学历无比自豪。\n 作为一名魔法师，她擅长运用自身的理科知识来施展相位魔法，并凭借着卓越的实力默默守护着文京区里世界的治安。',
-                tags: ['文京的玫瑰']
-            },
-            {
-                src: 'https://github.com/Alokiria/Image-Hosting/blob/Alokiria/Blog/%E8%8A%B1%E7%9B%9B%E7%99%BE%E6%9D%8F.jpg?raw=true',
-                name: '花盛百杏',
-                meta: '文京的玫瑰',
-                desc: '「对～我是偷走你心的怪盗 —— 花盛百杏～主任，请多多指教啦～」\n\n 活跃于深夜文京区的自警团 <文京的玫瑰> 的一员。\n 不知为何总自称为 <怪盗>，疯狂追求怪盗特有的浪漫。\n 不过，白天她其实是个认真上学、就读于名门女子大学的女大学生。',
-                tags: ['文京的玫瑰']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095543_%E7%81%B0%E5%8E%9F%E6%9C%9B%E4%B9%83.jpg',
-                name: '灰原望乃',
-                meta: '文京的玫瑰',
-                desc: '「虽然很累，但我会尝试看看……」\n\n 守护文京区的自警团 <文京的玫瑰> 的一员，同时也是在某家疗养医院工作的准护理师。\n 由于繁重的工作，她总是饱受慢性疲劳与压力折磨，或许正因如此，她偶尔会露出看起来有点危险的笑容。',
-                tags: ['文京的玫瑰']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095658_%E5%AE%9E%E4%B9%A0%E7%94%9FA.jpg',
-                name: '实习生A',
-                meta: '领地管理会特区厅分部',
-                desc: '「这瓶牛奶的保存期限虽然过了 3 年左右，但应该没关系吧？」\n\n 领地管理会的实习生。\n 看起来一副什么都无所谓的样子。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095658_%E5%AE%9E%E4%B9%A0%E7%94%9FB.jpg',
-                name: '实习生B',
-                meta: '领地管理会特区厅分部',
-                desc: '「怎么办啊，主任？我们好像完蛋了。再这样下去绝对 100% 会毁灭的。」\n\n 领地管理会的实习生。\n 似乎整天都在庸人自扰，总有操不完的心。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095658_%E5%AE%9E%E4%B9%A0%E7%94%9FC.jpg',
-                name: '实习生C',
-                meta: '领地管理会特区厅分部',
-                desc: '「这次感觉也会很顺利呢！咦？根据？没有那种东西喔？」\n\n 领地管理会的实习生。\n 似乎浑身上下只剩下那股无可救药的盲目乐观。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095658_%E5%A4%8F%E7%9B%AE%E6%BC%B1%E8%8A%B1.jpg',
-                name: '夏目漱花',
-                meta: '草莓咖啡馆',
-                desc: '「好喔～还是老样子，对吧？ …… 就算一直盯着看，它也不会动啦。耳朵跟尾巴都只是装饰而已。」\n\n 草莓咖啡馆的咖啡师，同时也负责外场与料理。\n 虽然看起来年纪很小，其实是一位即将毕业的大学生。\n 原本只是常去草莓咖啡馆的客人，没想到阴错阳差之下就这么待了下来，最后甚至成为了店员。\n 其实内心敏感、心思细腻，似乎也经常会对自己的未来感到烦恼。',
-                tags: ['草莓咖啡馆']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095658_%E6%9C%94%E5%9C%BA%E9%9B%AA.jpg',
-                name: '朔场雪',
-                meta: '草莓咖啡馆',
-                desc: '「前新选组成员，现任咖啡馆员工！还有个秘密，其实我是狼人！」\n\n 自称武士的草莓咖啡馆当家看板娘。\n 原本是个四处漂泊的人，被草莓咖啡馆的店长捡了回来。\n 她以天真直率又认真的态度，转眼间便融入了店里的日常风景。\n 不过也因为个性太有活力，总是精力旺盛，常常不是撞到东西就是跌倒，导致草莓咖啡馆已经没剩几个完好的盘子了。\n 即便如此，她对这间店的热爱，依然不输给任何人。',
-                tags: ['草莓咖啡馆']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095658_%E8%95%BE%E9%9B%85%C2%B7%E7%BB%B4%E5%B0%94%E8%8C%A8.jpg',
-                name: '蕾雅·维尔茨',
-                meta: '草莓咖啡馆',
-                desc: '「你不是专家吗？告诉我经营可疑违法商店的最新秘诀吧。 …… 嗯？不是吗？是我误会了？」\n\n 长相非常凶狠的老板娘。\n 退休的魔法师，如今把店里大大小小的工作全都丢给漱花，自己在营业时间里连一根手指都懒得动，整天看报纸。\n 草莓咖啡馆之所以会摇身一变成为兽耳女仆喫茶店，全都是拜她所赐。\n 多亏她那放任自流的经营方式吗？如今普通人与魔法师都能自由进出草莓咖啡馆。\n 至于这是不是她刻意为之，就不得而知了。',
-                tags: ['草莓咖啡馆']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095818_%E7%9B%91%E5%AF%9F%E5%AE%98A%E3%80%81%E7%9B%91%E5%AF%9F%E5%AE%98B.jpg',
-                name: '监察官A、监察官B',
-                meta: '领地管理会特区厅分部',
-                desc: '监察官 A\n「现在来展开特别稽查吧～哇哈哈哈哈哈──！」\n\n 监察官 B\n「这里就是特区厅分部吧？贿赂准备好了吗？嘻嘻嘻嘻嘻──！」\n\n 隶属于领地管理会监察局的监察官。\n 她们总会找各种理由，闯进特区厅分部展开稽查。',
-                tags: ['领地管理会特区厅分部']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095818_%E6%9F%B3%E5%8E%9F%E9%9C%B2%E4%BC%8A%E6%B4%81.jpg',
-                name: '柳原露伊洁',
-                meta: '结露煌三人组',
-                desc: '「啊啊～好～无～聊～就没有更有建设性，或是更有趣的事情吗？ 最好是那种能让莉莎拉学院或我爸妈头痛的那种。」\n\n 就读私立莉莎拉女子学院的问题学生。\n 外表宛如从画中走出来的贵族千金，但在柳原家眼中，她无论天分还是实力都不如人，因此被视为家族之耻。\n 简单来说，就是个问题学生。\n 她无法对自己认为不对的事坐视不管。\n 个性直来直往又横冲直撞，尤其见不得有人若无其事地瞧不起别人，总会忍不住冲上前去和对方理论。',
-                tags: ['结露煌三人组']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095818_%E6%B7%B9%E7%95%99%E7%85%8C%E5%A4%9C%E7%BE%8E.jpg',
-                name: '淹留煌夜美',
-                meta: '结露煌三人组',
-                desc: '「咦？最近的生活吗？ 嗯，这个嘛…… 身为自豪的青森县民…… 该怎么说呢，在大城市生活果然没有那么轻松……」\n\n 出生于青森县的炽焰少女。\n 自幼在身为罗马尼亚大魔女的奶奶教导下，接受各种魔女教育。\n 她对故乡青森县相当自豪，但对都市出身的魔女却同时感到自卑。\n 然而，当她看到都市那些光鲜亮丽的魔女连自己轻易能做到的事情都做不好时，又会当场露出得意洋洋的笑容，以居高临下的姿态看待对方，是一个个性有点难搞的人。',
-                tags: ['结露煌三人组']
-            },
-            {
-                src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2536020/o_261001095818_%E9%98%BF%E6%B3%89%E7%BB%93%E6%9C%88.jpg',
-                name: '阿泉结月',
-                meta: '结露煌三人组',
-                desc: '「欸，这该不会是漫画或传闻中才会出现的那种孽缘……？！ …… 算、算了。好像也不坏呢。」\n\n 出生于东京的某个普通家庭，与魔女没有任何渊源。\n 某天偶然在住家附近的池塘遇见了名为露莎卡的水精灵，自此便踏上了魔女之路。\n 她喜欢职业摔角和各种浪漫奇幻小说，甚至还有点憧憬恶役千金，是个再普通不过的平凡女孩。',
-                tags: ['结露煌三人组']
-            },
-        ],
-    },
-    {
-        id: 'demo-pictures',
-        cover: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/t_251204051842_bg-blog4.jpg',
-        caption: '普通画廊示例',
-        desc: '自称贤者弟子',
-        photos: [
-            { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051842_bg-blog4.jpg', name: '贤弟1', desc: '爷真可爱', tags: ['好看'] },
-            { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051842_bg-blog6.jpg', name: '贤弟2', desc: '米拉', tags: ['好看'] },
-            { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051842_bg-blog2.jpg', name: '贤弟3', tags: ['很好看'] },
-            { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051842_bg-blog1.jpg', name: '贤弟4', tags: ['很好看'] },
-            { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051842_bg-blog7.jpg', name: '贤弟5', tags: ['真好看'] },
-            { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051842_bg-blog5.jpg', name: '贤弟6', tags: ['超级好看'] },
-            { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051843_bg-blog3.jpg', name: '贤弟7', tags: ['很好看'] },
-            { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051842_bg-blog9.jpg', name: '贤弟8', tags: ['真好看'] },
-            { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051842_bg-blog10.jpg', name: '贤弟9', tags: ['超级好看'] },
-            { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051842_bg-blog8.jpg', name: '贤弟10', tags: ['真好看'] },
-        ],
-    },
-    // 嵌套示例：分组里再放分组 + 卡片图鉴 + 普通画廊
-    {
-        id: 'demo-group',
-        cover: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/t_251203145913_%E8%BE%89%E5%A4%9C2.jpg',
-        caption: '画廊分组示例',
-        desc: '分组可以无限嵌套，里面能放任意类型的画廊',
-        children: [
-            {
-                id: 'demo-group-1',
-                cover: 'https://img2024.cnblogs.com/blog/3739951/202610/3739951-20261001182750031-1616133590.jpg',
-                caption: '子分组 · 灵梦',
-                desc: '里面还可以套',
-                cards: [
-                    { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251203145355_1233.jpg', name: '卡图 01', meta: '2026/02/01', tags: ['游戏A', 'PR'] },
-                    { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251203145355_1233.jpg', name: '卡图 02', meta: '2026/02/02', tags: ['游戏A', 'SR'] },
-                    { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251203145355_1233.jpg', name: '卡图 03', meta: '2026/02/03', tags: ['游戏A', 'SSR'] },
-                    { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251203145355_1233.jpg', name: '卡图 04', meta: '2026/02/04', tags: ['游戏A', 'PR'] },
-                    { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251203145355_1233.jpg', name: '卡图 05', meta: '2026/02/05', tags: ['游戏A', 'SR'] },
-                    { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251203145355_1233.jpg', name: '卡图 06', meta: '2026/02/06', tags: ['游戏A', 'SSR'] },
-                ],
-            },
-            {
-                id: 'demo-group-2',
-                cover: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204053340_bg-404.jpg',
-                caption: '子分组 · 车万图',
-                desc: '另一个子分组',
-                photos: [
-                    { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204053340_bg-404.jpg', name: 'IMG_001' },
-                    { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204053544_%E7%BA%A2%E5%A6%B9.jpg', name: 'IMG_002' },
-                    { src: 'https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204053334_Wh.jpg', name: 'IMG_003' },
-                ],
-            },
-        ],
-    },
-]
+const metaModules = import.meta.glob<Module<AlbumMeta>>(['./gallery/**/album.ts', '!**/_*', '!**/_*/**'], { eager: true })
+const cardModules = import.meta.glob<Module<AlbumCard[]>>(['./gallery/**/cards.ts', '!**/_*', '!**/_*/**'], { eager: true })
+const photoModules = import.meta.glob<Module<AlbumPhoto[]>>(['./gallery/**/photos.ts', '!**/_*', '!**/_*/**'], { eager: true })
+
+/** 一个画册文件夹里读到的原始数据 */
+interface RawAlbum {
+    /** 相对 `gallery/` 的文件夹路径，例如 `demo-group/demo-group-1` */
+    dir: string
+    meta?: AlbumMeta
+    cards?: AlbumCard[]
+    photos?: AlbumPhoto[]
+}
+
+const folders = new Map<string, RawAlbum>()
+
+/** 把 glob 的 key（`./gallery/demo-group/album.ts`）还原成文件夹路径（`demo-group`） */
+function folderOf(key: string, file: string): string {
+    return key.slice('./gallery/'.length, key.length - file.length - 1)
+}
+
+/** 取出（必要时新建）某个文件夹的记录；`gallery/` 根目录本身不接受配置 */
+function folder(dir: string): RawAlbum | undefined {
+    if (!dir)
+        return undefined
+    let raw = folders.get(dir)
+    if (!raw) {
+        raw = { dir }
+        folders.set(dir, raw)
+    }
+    return raw
+}
+
+for (const [key, mod] of Object.entries(metaModules)) {
+    const raw = folder(folderOf(key, 'album.ts'))
+    if (raw)
+        raw.meta = mod.default
+}
+
+for (const [key, mod] of Object.entries(cardModules)) {
+    const raw = folder(folderOf(key, 'cards.ts'))
+    if (raw)
+        raw.cards = mod.default
+}
+
+for (const [key, mod] of Object.entries(photoModules)) {
+    const raw = folder(folderOf(key, 'photos.ts'))
+    if (raw)
+        raw.photos = mod.default
+}
+
+/**
+ * 补上「中间层」文件夹。
+ *
+ * 例如 `gallery/合集/第一弹/album.ts`：如果 `合集/` 里忘了放 album.ts，
+ * 不补这一步的话，父节点不存在 → 整棵子树会被静默吞掉。
+ * 这里给缺 album.ts 的中间层补一个空记录，它会按文件夹名变成分组节点，
+ * 封面自动用第一个子画廊的。
+ */
+for (const dir of [...folders.keys()]) {
+    let cut = dir.lastIndexOf('/')
+    while (cut > 0) {
+        const parent = dir.slice(0, cut)
+        if (!folders.has(parent)) {
+            folders.set(parent, { dir: parent })
+            console.warn(`[albums] gallery/${parent}/ 里没有 album.ts，已按文件夹名生成分组节点（封面取第一个子画廊）`)
+        }
+        cut = parent.lastIndexOf('/')
+    }
+}
+
+/* ------------------------------------------------------------------ *
+ * 组装画廊树
+ * ------------------------------------------------------------------ */
+
+/** 父文件夹 -> 直接子文件夹 */
+const childrenOf = new Map<string, string[]>()
+for (const dir of folders.keys()) {
+    const cut = dir.lastIndexOf('/')
+    const parent = cut < 0 ? '' : dir.slice(0, cut)
+    const siblings = childrenOf.get(parent)
+    if (siblings)
+        siblings.push(dir)
+    else
+        childrenOf.set(parent, [dir])
+}
+
+function nameOf(dir: string): string {
+    const cut = dir.lastIndexOf('/')
+    return cut < 0 ? dir : dir.slice(cut + 1)
+}
+
+/**
+ * 同级画册排序：先比 `order`（越小越靠前），再比文件夹名。
+ *
+ * 这里特意不用 `localeCompare` —— 它在 Node（SSG 预渲染）和浏览器里的结果
+ * 可能不一致，会造成水合前后顺序不同。直接比字符串码点，两边结果一定一样。
+ */
+function byOrder(a: string, b: string): number {
+    const oa = folders.get(a)?.meta?.order ?? 0
+    const ob = folders.get(b)?.meta?.order ?? 0
+    if (oa !== ob)
+        return oa - ob
+    const na = nameOf(a)
+    const nb = nameOf(b)
+    return na < nb ? -1 : na > nb ? 1 : 0
+}
+
+/** 已经用掉的 id -> 文件夹，用来提示重复 id（重复会导致 URL 打开错画册） */
+const idOwners = new Map<string, string>()
+
+/**
+ * 画册自己的封面兜底：拿这个画册第一张图来当封面。
+ *
+ * 优先用缩略图 `cover`，没写才用原图 `src` —— 和网格里显示的是同一张，
+ * 免得画册封面突然加载一张几 MB 的原图。
+ */
+function firstImage(cards?: AlbumCard[], photos?: AlbumPhoto[]): string {
+    const first = cards?.[0] ?? photos?.[0]
+    return first?.cover || first?.src || ''
+}
+
+/** 递归把一个文件夹变成画廊节点 */
+function buildEntry(dir: string): AlbumEntry {
+    const raw = folders.get(dir)
+    const meta = raw?.meta ?? {}
+    const cards = meta.cards?.length ? meta.cards : raw?.cards
+    const photos = meta.photos?.length ? meta.photos : raw?.photos
+    const folderName = nameOf(dir)
+
+    const children = (childrenOf.get(dir) ?? []).slice().sort(byOrder).map(buildEntry)
+
+    const ownCover = meta.cover ?? firstImage(cards, photos)
+
+    const entry: AlbumEntry = {
+        id: meta.id ?? folderName,
+        // 封面兜底：先用自己的 cover，再借第一张图，分组最后借第一个子画廊的封面
+        cover: ownCover || children[0]?.cover || '',
+        caption: meta.caption ?? folderName,
+    }
+    if (meta.desc)
+        entry.desc = meta.desc
+    if (children.length)
+        entry.children = children
+    if (cards?.length)
+        entry.cards = cards
+    if (photos?.length)
+        entry.photos = photos
+
+    // 下面几条都是「配错了才会出现」的诊断，构建日志里能直接看到
+    const owner = idOwners.get(entry.id)
+    if (owner)
+        console.warn(`[albums] id「${entry.id}」重复：gallery/${owner} 和 gallery/${dir}，URL 里的 ?a=${entry.id} 只会打开其中一个`)
+    else
+        idOwners.set(entry.id, dir)
+
+    if (cards?.length && photos?.length)
+        console.warn(`[albums] gallery/${dir} 同时有 cards 和 photos，页面只会渲染卡片图鉴（分组则只渲染子画廊）`)
+
+    if (!entry.cover)
+        console.warn(`[albums] gallery/${dir} 既没有写 cover，也没有任何图片可以当封面`)
+
+    return entry
+}
+
+/** 画廊树。`gallery/` 下的顶层画册文件夹就是 `/albums/` 页面上的一行卡片 */
+export const albumTree: AlbumEntry[] = (childrenOf.get('') ?? []).slice().sort(byOrder).map(buildEntry)
 
 /** 从根节点一路找到某个 id，返回从根到该节点的路径 */
 export function findAlbumPath(tree: AlbumEntry[], id: string): AlbumEntry[] {

@@ -308,6 +308,51 @@ AUTHOR_EMAIL=你想收通知的邮箱
 
 `AUTHOR_EMAIL` / `SITE_NAME` / `SITE_URL` 是**所有通知渠道共用**的。除了邮件，Waline 还支持 Telegram、QQ、微信、企业微信、飞书、Discord、PushPlus 等，各自有单独的 key，详见[评论通知文档](https://waline.js.org/guide/features/notification.html)。
 
+#### 评论审核与反垃圾
+
+同样是**服务端环境变量**（Vercel），改完要 Redeploy。
+
+| 变量 | 默认 | 作用 |
+| --- | --- | --- |
+| `COMMENT_AUDIT` | 关 | 开启后新评论是 `waiting` 状态，必须在 `<服务端>/ui` 审核通过才显示 |
+| `AKISMET_KEY` | **默认就是开着的**（用 Waline 内置的公共 key `70542d86693e`） | 反垃圾。被判为垃圾的评论 `status = 'spam'`，前台不显示 |
+
+服务端源码 `src/controller/comment.js` 里这两件事的顺序是关键：
+
+```js
+data.status = this.config('audit') ? 'waiting' : 'approved';
+
+if (data.status === 'approved') {
+  const spam = await this.service('akismet', this.ctx.serverURL).check(data)
+    .catch((err) => { console.log(err); }); // 出错就当没检出垃圾
+  if (spam === true)
+    data.status = 'spam';
+}
+```
+
+两条推论：
+
+- **开了审核就不会再跑 Akismet**（审核优先），评论必然停在 `waiting`。
+- `COMMENT_AUDIT` 只要不设就是关的（配置里是 `COMMENT_AUDIT && !isFalse(COMMENT_AUDIT)`）。所以「评论显示要审核」通常是它被设成了 `true` / `1`。
+
+**所以「评论发出去看不到」有两种完全不同的原因，先分清**：
+
+1. 评论停在 `<服务端>/ui` 的**待审核**里 → 是 `COMMENT_AUDIT` 开着。
+2. 评论直接进了**垃圾**（`spam`）→ 是 Akismet 用那个公共 key 把它判成了垃圾。这个更常见，因为它是**默认开启**的。
+
+**想让评论直接显示出来**：
+
+```ini
+COMMENT_AUDIT=false
+AKISMET_KEY=false
+```
+
+> ⚠️ `AKISMET_KEY=false` 是把反垃圾**整个关掉**，之后只剩 `COMMENT_AUDIT`、代码里配的 `forbiddenWords` 关键词过滤，以及后台手动删。想留着反垃圾就去 [akismet.com](https://akismet.com/) 申请一个自己的 key 填进来——Waline 内置那个公共 key 是所有人共用的，判断很不稳，还经常把正常评论误杀。
+>
+> 另外 Akismet 只认字符串 `false`（代码是 `key.toLowerCase() !== 'false'`），写 `false` / `FALSE` 都行，但**不能留空**——留空会回落到内置 key，等于没关。
+>
+> Akismet 出错时会**放行**（`.catch()` 吞掉错误，`spam` 为 `undefined`，评论保持 `approved`）。所以「关掉后还是看不到评论」就得往别处查了：`IPQPS`（默认同一 IP 60 秒内不能重复评论，这个会直接报错提示）、或者评论发到了另一条 path 上。
+
 #### 表情包
 
 配置位置是 `valaxy.config.ts` 里 `addonWaline({ ... })` 的 `types` / `emoji` / `cdn`（**前端配置**，和上面的邮件通知不是一回事）。

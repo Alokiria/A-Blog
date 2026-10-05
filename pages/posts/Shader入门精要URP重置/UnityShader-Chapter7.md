@@ -1,7 +1,7 @@
 ---
 title: '第七章 基础纹理'
 date: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-05
 categories: UnityShader入门精要-URP改编
 cover: https://img2024.cnblogs.com/blog/3739951/202610/3739951-20261001183332881-544713617.png
 tags:
@@ -27,7 +27,7 @@ top: 1
 
 首先第一步，为了使用纹理，我们需要在Properties语义块中添加一个纹理属性：
 
-```typescript
+```shaderlab
 Properties
 {
     _Color ("Color", Color) = (1, 1, 1, 1)
@@ -41,7 +41,7 @@ Properties
 
 我们需要在Pass中声明和上述属性类型相匹配的变量，以便和材质面板中的属性建立联系：
 
-```typescript
+```shaderlab
 // 下面两个可以换成sampler2D _BaseMap;
 // 但是最好用下面的写法，把材质和采样器分离
 TEXTURE2D(_BaseMap);
@@ -62,7 +62,7 @@ CBUFFER_END
 
 接下来需要定义顶点着色器的输入输出结构体：
 
-```typescript
+```shaderlab
 struct Attributes
 { 
     float4 positionOS : POSITION;
@@ -83,7 +83,7 @@ struct Varyings
 
 然后我们定义顶点着色器：
 
-```typescript
+```shaderlab
 Varyings vert(Attributes IN)
 {
     Varyings OUT;
@@ -98,7 +98,7 @@ Varyings vert(Attributes IN)
 
 在顶点着色器中，我们使用纹理的属性值`_BaseMap_ST`来对顶点纹理坐标进行变换，得到最终的纹理坐标。计算过程是：首先使用`_BaseMap_ST.xy`对顶点纹理坐标进行缩放，然后再使用`_BaseMap_ST.zw`对结果进行偏移。Unity提供了一个内置宏`TRANSFORM_TEX`来帮我们计算上述过程。
 
-```typescript
+```shaderlab
 #define TRANSFORM_TEX(tex,name) (tex.xy * name##_ST.xy + name##_ST.ze)
 ```
 
@@ -106,7 +106,7 @@ Varyings vert(Attributes IN)
 
 最后，我们还需要实现片元着色器，并在计算漫反射时使用纹理中的纹素值：
 
-```typescript
+```shaderlab
 half4 frag(Varyings IN) : SV_Target   
 {
     Light mainLight = GetMainLight();
@@ -133,7 +133,7 @@ half4 frag(Varyings IN) : SV_Target
 
 完整代码：
 
-```typescript
+```shaderlab
 Shader "Unlit/SingleTexture"
 {
     Properties
@@ -368,7 +368,7 @@ $$normal=pixel×2-1$$
 
 首先，我们在Properties语义块中添加了两个新属性，一个是法线纹理的属性，一个是用于控制凹凸程度的属性。
 
-```typescript
+```shaderlab
 Properties
 {
     _Color ("Color", Color) = (1, 1, 1, 1)
@@ -384,7 +384,7 @@ Properties
 
 然后在Pass中声明相应的属性：
 
-```typescript
+```shaderlab
 TEXTURE2D(_BaseMap);
 SAMPLER(sampler_BaseMap);
 TEXTURE2D(_NormalMap);
@@ -402,7 +402,7 @@ CBUFFER_END
 
 然后定义输入和输出结构体：
 
-```typescript
+```shaderlab
 struct Attributes
 {
     float4 positionOS: POSITION;
@@ -427,7 +427,7 @@ struct Varyings
 
 之后我们定义顶点着色器：
 
-```typescript
+```shaderlab
 Varyings vert (Attributes IN)
 {
     Varyings OUT;
@@ -453,7 +453,7 @@ Varyings vert (Attributes IN)
 
 下面再提供另一种写法：
 
-```typescript
+```shaderlab
 Varyings vert (Attributes IN)
 {
     Varyings OUT;
@@ -479,7 +479,7 @@ Varyings vert (Attributes IN)
 
 由于我们在顶点着色器中完成了大部分工作，因此片元着色器中只需要采样得到切线空间下的法线方向，再在切线空间下进行光照计算即可：
 
-```typescript
+```shaderlab
 half4 frag (Varyings IN) : SV_Target
 {
     Light mainLight = GetMainLight();
@@ -510,7 +510,7 @@ half4 frag (Varyings IN) : SV_Target
 
 完整代码：
 
-```typescript
+```shaderlab
 Shader "Unlit/NormalMapTangentSpace"
 {
     Properties
@@ -643,7 +643,7 @@ Shader "Unlit/NormalMapTangentSpace"
 
 输入输出结构体：
 
-```typescript
+```shaderlab
 struct Attributes
 {
     float4 positionOS: POSITION;
@@ -666,7 +666,7 @@ struct Varyings
 
 顶点着色器：
 
-```typescript
+```shaderlab
 Varyings vert (Attributes IN)
 {
     Varyings OUT;
@@ -688,7 +688,7 @@ Varyings vert (Attributes IN)
 
 片元着色器：
 
-```typescript
+```shaderlab
 half4 frag (Varyings IN) : SV_Target
 {
     Light mainLight = GetMainLight();
@@ -720,7 +720,7 @@ half4 frag (Varyings IN) : SV_Target
 
 完整代码：
 
-```typescript
+```shaderlab
 Shader "Unlit/NormalMapWorldSpace"
 {
     Properties
@@ -837,7 +837,7 @@ Shader "Unlit/NormalMapWorldSpace"
 
 简单来说，这么做可以让Unity根据不同平台对纹理进行压缩（例如使用DXT5nm格式，具体的压缩细节不在赘述，可以上网搜），再通过UnpackNormalScale函数来针对不同的压缩格式对法线纹理进行正确的采样。我们可以在Packing.hlsl中找到函数的具体实现。
 
-```typescript
+```shaderlab
 // Assume f [-1..1]
 real3 UnpackNormalTetraEncode(real2 f, uint faceIndex)
 {
@@ -930,7 +930,7 @@ real3 UnpackNormalScale(real4 packedNormal, real bumpScale)
 
 首先声明纹理属性，_RampMap用于存储渐变纹理：
 
-```typescript
+```shaderlab
 Properties
 {
     _Color ("Color", Color) = (1, 1, 1, 1)
@@ -942,7 +942,7 @@ Properties
 
 随后在Pass中定义与Properties中各个属性相匹配的变量：
 
-```typescript
+```shaderlab
 TEXTURE2D(_RampMap);
 SAMPLER(sampler_RampMap);
 
@@ -956,7 +956,7 @@ CBUFFER_END
 
 之后定义输入和输出结构体：
 
-```typescript
+```shaderlab
 struct Attributes
 {
     float4 positionOS: POSITION;
@@ -975,7 +975,7 @@ struct Varyings
 
 定义顶点着色器：
 
-```typescript
+```shaderlab
 Varyings vert (Attributes IN)
 {
     Varyings OUT;
@@ -992,7 +992,7 @@ Varyings vert (Attributes IN)
 
 接下来是关键的片元着色器：
 
-```typescript
+```shaderlab
 half4 frag (Varyings IN) : SV_Target
 {
     Light mainLight = GetMainLight();
@@ -1031,7 +1031,7 @@ half4 frag (Varyings IN) : SV_Target
 
 完整代码：
 
-```typescript
+```shaderlab
 Shader "Unlit/RampTexture"
 {
     Properties
@@ -1143,7 +1143,7 @@ Shader "Unlit/RampTexture"
 
 首先修改原来的Properties，声明更多的变量来控制高光：
 
-```typescript
+```shaderlab
 Properties
 {
     _Color ("Color", Color) = (1, 1, 1, 1)
@@ -1159,7 +1159,7 @@ Properties
 
 修改Pass中声明的相对应的变量：
 
-```typescript
+```shaderlab
 TEXTURE2D(_BaseMap);
 SAMPLER(sampler_BaseMap);
 TEXTURE2D(_NormalMap);
@@ -1181,7 +1181,7 @@ CBUFFER_END
 
 修改输入输出结构体：
 
-```typescript
+```shaderlab
 struct Attributes
 {
     float4 positionOS: POSITION;
@@ -1204,7 +1204,7 @@ struct Varyings
 
 修改顶点着色器：
 
-```typescript
+```shaderlab
 Varyings vert (Attributes IN)
 {
     Varyings OUT;
@@ -1231,7 +1231,7 @@ Varyings vert (Attributes IN)
 
 接下来修改片元着色器：
 
-```typescript
+```shaderlab
 half4 frag (Varyings IN) : SV_Target
 {
     Light mainLight = GetMainLight();
@@ -1260,7 +1260,7 @@ half4 frag (Varyings IN) : SV_Target
 
 完整代码：
 
-```typescript
+```shaderlab
 Shader "Unlit/MaskTexture"
 {
     Properties

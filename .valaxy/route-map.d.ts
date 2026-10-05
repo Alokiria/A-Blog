@@ -143,6 +143,20 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/posts/Shader入门精要URP重置/UnityShader-Chapter10': RouteRecordInfo<
+      '/posts/Shader入门精要URP重置/UnityShader-Chapter10',
+      '/posts/Shader%E5%85%A5%E9%97%A8%E7%B2%BE%E8%A6%81URP%E9%87%8D%E7%BD%AE/UnityShader-Chapter10',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/posts/Shader入门精要URP重置/UnityShader-Chapter11': RouteRecordInfo<
+      '/posts/Shader入门精要URP重置/UnityShader-Chapter11',
+      '/posts/Shader%E5%85%A5%E9%97%A8%E7%B2%BE%E8%A6%81URP%E9%87%8D%E7%BD%AE/UnityShader-Chapter11',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/posts/Shader入门精要URP重置/UnityShader-Chapter6': RouteRecordInfo<
       '/posts/Shader入门精要URP重置/UnityShader-Chapter6',
       '/posts/Shader%E5%85%A5%E9%97%A8%E7%B2%BE%E8%A6%81URP%E9%87%8D%E7%BD%AE/UnityShader-Chapter6',
@@ -153,6 +167,20 @@ declare module 'vue-router/auto-routes' {
     '/posts/Shader入门精要URP重置/UnityShader-Chapter7': RouteRecordInfo<
       '/posts/Shader入门精要URP重置/UnityShader-Chapter7',
       '/posts/Shader%E5%85%A5%E9%97%A8%E7%B2%BE%E8%A6%81URP%E9%87%8D%E7%BD%AE/UnityShader-Chapter7',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/posts/Shader入门精要URP重置/UnityShader-Chapter8': RouteRecordInfo<
+      '/posts/Shader入门精要URP重置/UnityShader-Chapter8',
+      '/posts/Shader%E5%85%A5%E9%97%A8%E7%B2%BE%E8%A6%81URP%E9%87%8D%E7%BD%AE/UnityShader-Chapter8',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/posts/Shader入门精要URP重置/UnityShader-Chapter9': RouteRecordInfo<
+      '/posts/Shader入门精要URP重置/UnityShader-Chapter9',
+      '/posts/Shader%E5%85%A5%E9%97%A8%E7%B2%BE%E8%A6%81URP%E9%87%8D%E7%BD%AE/UnityShader-Chapter9',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -305,6 +333,22 @@ declare module 'vue-router/auto-routes' {
       pathParamNames:
         | never
     }
+    'pages/posts/Shader入门精要URP重置/UnityShader-Chapter10.md': {
+      routes:
+        | '/posts/Shader入门精要URP重置/UnityShader-Chapter10'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'pages/posts/Shader入门精要URP重置/UnityShader-Chapter11.md': {
+      routes:
+        | '/posts/Shader入门精要URP重置/UnityShader-Chapter11'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
     'pages/posts/Shader入门精要URP重置/UnityShader-Chapter6.md': {
       routes:
         | '/posts/Shader入门精要URP重置/UnityShader-Chapter6'
@@ -316,6 +360,22 @@ declare module 'vue-router/auto-routes' {
     'pages/posts/Shader入门精要URP重置/UnityShader-Chapter7.md': {
       routes:
         | '/posts/Shader入门精要URP重置/UnityShader-Chapter7'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'pages/posts/Shader入门精要URP重置/UnityShader-Chapter8.md': {
+      routes:
+        | '/posts/Shader入门精要URP重置/UnityShader-Chapter8'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'pages/posts/Shader入门精要URP重置/UnityShader-Chapter9.md': {
+      routes:
+        | '/posts/Shader入门精要URP重置/UnityShader-Chapter9'
       views:
         | never
       pathParamNames:

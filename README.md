@@ -225,6 +225,160 @@ const BANGUMI_UID = ''                                        // Bangumi uid，�
 
 > ⚠️ 默认的 `BANGUMI_API` 是插件作者的**公开演示后端**，随时可能挂掉。正式使用请自建后端（参考上面 `bilibili-bangumi-component` 的 `docs/backend.md`），然后替换该地址，并把 uid 改到后端的环境变量里。
 
+### 评论（Waline）
+
+用官方插件 [`valaxy-addon-waline`](https://valaxy.site/zh/addons/official/waline)。
+
+Valaxy 这边只负责渲染评论区，评论的**存储 / 读取 / 管理全在服务端**，所以必须自己部署一个——Waline 官方不提供公共演示服务端，没有「不部署也能用」的选项。
+
+`valaxy.config.ts` 顶部：
+
+```ts
+// 换成你自己部署好的 Waline 服务端地址，否则评论区能渲染出来但一直提示加载失败
+const WALINE_SERVER_URL = 'https://a-b-waline.vercel.app'
+```
+
+部署流程见[官方快速上手](https://waline.js.org/guide/get-started/)：Vercel 一键部署 → 建数据库（Neon）→ 拿到 `https://xxx.vercel.app` 填进上面的常量 → 访问 `<地址>/ui/register` 注册管理员（**第一个注册的人自动成为管理员**）。
+
+哪些页面显示评论区由两层共同决定：`site.config.ts` 的 `siteConfig.comment.enable`（总闸）+ 单页 frontmatter 的 `comment`（`comment: false` 单独关掉）。当前开启的是：文章页、`/albums/`、`/girls/`、`/about/`。
+
+#### 邮件通知
+
+想在有人评论 / 回复时收到邮件，靠的是**服务端的环境变量**（Vercel：`Settings` → `Environment Variables`），**改完必须 Redeploy 才生效**。
+
+> ⚠️ 这些**不写进** `valaxy.config.ts`——前端读不到，写了也没用。
+
+| 变量 | 填什么 |
+| --- | --- |
+| `SMTP_SERVICE` | 邮箱服务商名，见下方表格。与 `SMTP_HOST`+`SMTP_PORT` **二选一** |
+| `SMTP_HOST` / `SMTP_PORT` | 服务商不在支持列表里时才填，邮箱的「设置」页能查到 |
+| `SMTP_USER` | 发信邮箱的**完整地址**（也是默认的发件人） |
+| `SMTP_PASS` | 登录密码；**163 / QQ 邮箱是单独的「授权码」**，不是登录密码 |
+| `SMTP_SECURE` | 是否用 SSL。**只在走 `SMTP_HOST` / `SMTP_PORT` 时生效**——465 填 `true`，587 / 25 留空。**一旦写了 `SMTP_SERVICE`，这个变量会被完全忽略**（SSL 由服务商定义决定，不用你操心） |
+| `SITE_NAME` | 站点名，显示在通知邮件里 |
+| `SITE_URL` | 站点地址，显示在通知邮件里 |
+| `AUTHOR_EMAIL` | 博主邮箱：新评论通知发到这里；同时用它区分「博主自己发的评论」，是本人发的就不再提醒。**不填的话博主通知发不出去** |
+
+`SMTP_USER`（发信账号）和 `AUTHOR_EMAIL`（收信地址）**可以不是同一个**，比如用 QQ 邮箱发信、通知发到 Outlook。
+
+以本站为例（把邮箱换成你自己的）：
+
+```ini
+SMTP_SERVICE=QQ
+SMTP_USER=你的QQ号@qq.com
+SMTP_PASS=QQ邮箱设置里生成的16位授权码
+SITE_NAME=愿慈悲永驻，愿你永远善良……
+SITE_URL=https://www.alokiria.top/
+AUTHOR_EMAIL=你想收通知的邮箱
+```
+
+常用服务商名（[完整列表](https://github.com/nodemailer/nodemailer/blob/master/src/well-known/services.json)）：
+
+| 邮箱 | `SMTP_SERVICE` |
+| --- | --- |
+| QQ 邮箱 | `QQ` |
+| 腾讯企业邮 | `QQex` |
+| 网易 163 / 126 | `163` / `126` |
+| 阿里云个人邮箱 | `Aliyun` |
+| 阿里云企业邮箱 | `AliyunQiye` 或 `qiye.aliyun` |
+| 飞书邮箱 | `Feishu Mail` |
+| Zoho | `Zoho` |
+| Gmail | `Gmail` |
+| Microsoft 365 | `Outlook365` |
+| Outlook.com / Hotmail 个人邮箱 | `Hotmail` |
+
+三个坑：
+
+- **163 / QQ 必须用授权码**。163：设置 → POP3/SMTP/IMAP → 开启服务 → 新增授权密码；QQ：设置 → 账户 → POP3/IMAP/SMTP服务 → 开启 → 生成授权码。填登录密码会直接认证失败。
+- **Outlook.com 个人邮箱**对 SMTP AUTH 限制越来越多（要开两步验证并用应用密码），不建议拿来当发信邮箱。
+- **自定义域名的邮箱要先确认它真的能发信**。像 Cloudflare Email Routing 只做转发，**没有 SMTP 发信能力**，填了必然失败。
+
+配好邮件服务后，Waline 的用户注册会额外走邮箱验证码流程（防恶意注册），这是预期行为，不是 bug。
+
+#### 几个从服务端源码里确认的行为
+
+看的是 `@waline/vercel` 的 `src/service/notify.js`，几条不看源码想不到的：
+
+- **博主邮件是「兜底」渠道**：只有当微信 / QQ / Telegram / 企业微信 / PushPlus / Discord / 飞书**全都没配（或全都没发出去）**时，才会给 `AUTHOR_EMAIL` 发邮件。所以「邮件 + 任一其他渠道」同时配时，博主只会收到那个渠道的消息。
+- **访客回复通知**是另一条路：回复会发给**被回复者**，但有三个前提——对方留了真实邮箱（第三方登录的假邮箱会被跳过）、不是自己回自己、被回复的人不是博主（博主由上面那条兜底逻辑负责）。评论处于待审核（`waiting`）状态时也不发。
+- **`SENDER_NAME` 和 `SENDER_EMAIL` 要一起填**才生效；只填一个时发件人会退回成 `SMTP_USER`。
+- 以上这些都是**服务端**行为，改不了，只能顺着它配。
+
+可选变量：`SENDER_NAME`、`SENDER_EMAIL`（自定义发件人）、`MAIL_SUBJECT` / `MAIL_TEMPLATE`（给访客的回复通知）、`MAIL_SUBJECT_ADMIN` / `MAIL_TEMPLATE_ADMIN`（给博主的新评论通知）、`DISABLE_AUTHOR_NOTIFY=true`（关掉博主通知）。Vercel 环境变量有 4KB 上限，模板很长时别硬塞。
+
+`AUTHOR_EMAIL` / `SITE_NAME` / `SITE_URL` 是**所有通知渠道共用**的。除了邮件，Waline 还支持 Telegram、QQ、微信、企业微信、飞书、Discord、PushPlus 等，各自有单独的 key，详见[评论通知文档](https://waline.js.org/guide/features/notification.html)。
+
+#### 表情包
+
+配置位置是 `valaxy.config.ts` 里 `addonWaline({ ... })` 的 `types` / `emoji` / `cdn`（**前端配置**，和上面的邮件通知不是一回事）。
+
+**默认就有 B 站 / QQ / 微博三套**，不用配。插件源码（`valaxy-addon-waline/utils/index.ts`）里的默认值是：
+
+```ts
+getEmojis(cdn = '//unpkg.com/', types = ['bilibili', 'qq', 'weibo'], emoji?)
+```
+
+所以「评论区没有表情包」基本不会是这个原因，先查 `@waline/emojis` 的 CDN 通不通。
+
+**加/换官方表情包**用 `types`。注意它是**整体替换**而不是追加——想保留 QQ、微博就得一起写：
+
+```ts
+addonWaline({
+  serverURL: WALINE_SERVER_URL,
+  types: ['bilibili', 'bmoji', 'qq', 'weibo', 'tieba', 'alus', 'coolapk', 'soul-emoji', 'tw-emoji'],
+})
+```
+
+可选值来自包目录（`@waline/emojis@1.4.0`）：`alus`、`bilibili`、`bmoji`（B站小黄脸）、`coolapk`（酷安）、`qq`、`soul-emoji`（元气骑士）、`tieba`、`weibo`、`tw-emoji`，以及 `tw` / `tw-body` / `tw-food` / `tw-natural` / `tw-object` / `tw-symbol` / `tw-people` / `tw-sport` / `tw-time` / `tw-travel` / `tw-weather` / `tw-flag` 这一套按分类拆开的 Twitter 表情。⚠️ 这些表情包 Waline 不含版权，自负风险。
+
+**加自己的表情包**（自己的 meme 图）用 `emoji`，填预设目录地址：
+
+```ts
+addonWaline({
+  serverURL: WALINE_SERVER_URL,
+  // 目录地址不要带结尾斜杠——插件会自动补一个 `/`，
+  // 写了会变成 `.../emoji//`，多数 CDN 能容忍但不保证。
+  emoji: ['https://cdn.jsdelivr.net/gh/Alokiria/Image-Hosting@v1.0.0/emoji'],
+})
+```
+
+自己那套表情包需要在同一个目录里放一个 `info.json`，图片按 `前缀_名字.后缀` 命名：
+
+```
+https://example.com/my-emoji/
+  ├─ my_laugh.png
+  ├─ my_cute.png
+  ├─ my_rage.png
+  └─ info.json
+```
+
+```json
+{
+  "name": "我的表情",
+  "prefix": "my_",
+  "type": "png",
+  "icon": "cute",
+  "items": ["laugh", "cute", "rage", "sob"]
+}
+```
+
+- `prefix` / `type`：拼出文件名（`my_` + `laugh` + `.png`）。表情的 key 就是文件名去掉前缀后缀，**不同预设之间同名会撞车**，所以务必加自己的前缀。
+- `items`：按你想要的顺序列，别忘了合并 `icon` 那个。
+- `icon`：选项卡上显示的代表性表情。
+
+托管建议用 GitHub 仓库 + jsDelivr，并且**一定要带 tag**（`@v1.0.0`）。否则以后你改了表情图，历史评论里引用的表情会跟着一起变/挂掉。国内 `cdn.jsdelivr.net` 被污染时可以换 `gcore.jsdelivr.net`。
+
+**换官方表情包的 CDN**用 `cdn`（默认 `//unpkg.com/`，只影响 `types` 那几套，不影响 `emoji`）：
+
+```ts
+cdn: 'https://cdn.jsdelivr.net/npm/',
+```
+
+两个源码层面的限制：
+
+- 插件的 `emoji` 选项**没法用 `emoji: false` 关掉表情**（`getEmojis` 里 `!false` 为真，照样返回 `types` 的默认三套）。真要全关得写 `types: []` + `emoji: []`。
+- `cdn` 只拼官方那几套的地址；`emoji` 里给的地址是原样用的（只补一个结尾 `/`）。
+
 ## 目录结构
 
 - `pages`：页面。`pages/posts` 下的文章会被计入文章列表

@@ -40,8 +40,11 @@ const BANGUMI_UID = 'alokiria'
  *   4. 访问 `<你的地址>/ui/register` 注册管理员，第一个注册的人自动成为管理员。
  *
  * 想绑自己的域名（例如 waline.alokiria.top）就改这一行即可，代码别处不用动。
+ *
+ * 邮件通知等后续配置不在这里：那些是**服务端的环境变量**，前端读不到。
+ * 填法见 README「评论（Waline）→ 邮件通知」一节。
  */
-const WALINE_SERVER_URL = 'https://your-waline-url'
+const WALINE_SERVER_URL = 'https://a-b-waline.vercel.app'
 
 // add icons what you will need
 const safelist = [
@@ -314,6 +317,30 @@ export default defineValaxyConfig<UserThemeConfig>({
      */
     addonWaline({
       serverURL: WALINE_SERVER_URL,
+
+      /**
+       * 表情包。两个选项分工不一样：
+       *
+       * `types` —— 从官方表情包 @waline/emojis 里挑几套。插件会把每个值拼成
+       *   `{cdn}@waline/emojis/{type}/`。**不写时默认就是 B 站 / QQ / 微博三套**，
+       *   所以「评论区没有表情包」一般不是这里的问题。
+       *   ⚠️ 一旦写了，就是**整体替换**默认值 —— 想留着 QQ、微博必须一起写进去。
+       *   当前可选：
+       *     alus（阿鲁斯）· bilibili（B站）· bmoji（B站小黄脸）· coolapk（酷安）
+       *     qq · soul-emoji（元气骑士）· tieba（贴吧）· weibo（微博）
+       *     tw-emoji（Twitter 表情）· tw / tw-body / tw-food / tw-people …（按分类）
+       *
+       * `emoji` —— 加**自己的**表情包（不在官方列表里的），填预设目录地址。
+       *   插件会自动在末尾补一个 `/`，所以这里**不要写结尾斜杠**。
+       *   那个目录里必须有一个 info.json，格式和托管方式见
+       *   README「评论（Waline）→ 表情包」。
+       *
+       * `cdn` —— 只影响官方那几套的来源（默认 `//unpkg.com/`）。
+       *   国内 unpkg 偶尔不稳，可以换成 `https://cdn.jsdelivr.net/npm/`。
+       */
+      // types: ['bilibili', 'bmoji', 'qq', 'weibo', 'tieba', 'alus', 'coolapk', 'soul-emoji', 'tw-emoji'],
+      // emoji: ['https://cdn.jsdelivr.net/gh/<用户名>/<仓库>@<tag>/<表情包目录>'],
+      types: ['bilibili', 'bmoji', 'qq', 'weibo', 'tieba', 'alus', 'coolapk', 'soul-emoji', 'tw-emoji'],
     }),
   ],
 

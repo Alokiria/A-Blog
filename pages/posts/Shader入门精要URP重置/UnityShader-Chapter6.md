@@ -5,7 +5,6 @@ updated: 2026-06-15
 categories: UnityShader入门精要-URP改编
 cover: https://images.cnblogs.com/cnblogs_com/blogs/858247/galleries/2486318/o_251204051842_bg-blog4.jpg
 tags:
-  - UnityShader
   - Shaderlab
   - TA
   - 图形学

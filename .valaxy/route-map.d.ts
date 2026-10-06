@@ -185,6 +185,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/posts/UnityShader/PBR基础': RouteRecordInfo<
+      '/posts/UnityShader/PBR基础',
+      '/posts/UnityShader/PBR%E5%9F%BA%E7%A1%80',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/tags/': RouteRecordInfo<
       '/tags/',
       '/tags',
@@ -376,6 +383,14 @@ declare module 'vue-router/auto-routes' {
     'pages/posts/Shader入门精要URP重置/UnityShader-Chapter9.md': {
       routes:
         | '/posts/Shader入门精要URP重置/UnityShader-Chapter9'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'pages/posts/UnityShader/PBR基础.md': {
+      routes:
+        | '/posts/UnityShader/PBR基础'
       views:
         | never
       pathParamNames:
